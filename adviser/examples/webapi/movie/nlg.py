@@ -56,11 +56,16 @@ class MovieNLG(Service):
                 return {'sys_utterance': 'For which year are you looking for a movie?'}
             elif slot == 'with_genres':
                 return {'sys_utterance': 'Which genre are you interested in?'}
+            elif slot == 'with_actors':
+                return {'sys_utterance': 'What actors are you interested in?'}
             else:
-                assert False, 'Only a year and a genre can be requested'
+                assert False, 'Only a year, genre and actor name can be requested'
         else:
+            print ({'sys_utterance': sys_act.slot_values })
+            #TODO: Change template according to what slot values are given in sys_act.slot_values.
             with_genres = sys_act.slot_values['with_genres'][0]
+            with_actors = sys_act.slot_values['with_actors'][0]
             primary_release_year = sys_act.slot_values['primary_release_year'][0]
             title = sys_act.slot_values['title'][0]
             overview = sys_act.slot_values['overview'][0]
-            return {'sys_utterance': f'A {with_genres} movie released in {primary_release_year} is called {title}: {overview}.'}
+            return {'sys_utterance': f'A {with_genres} movie starring {with_actors} released in {primary_release_year} is called {title}: {overview}.'}
