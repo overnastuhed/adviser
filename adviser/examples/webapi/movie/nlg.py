@@ -61,7 +61,6 @@ class MovieNLG(Service):
             else:
                 assert False, 'Only a year, genre and actor name can be requested'
         else:
-            print ({'sys_utterance': sys_act.slot_values })
             #TODO: Change template according to what slot values are given in sys_act.slot_values.
             with_genres = sys_act.slot_values['with_genres'][0]
             with_actors = sys_act.slot_values['with_actors'][0]
