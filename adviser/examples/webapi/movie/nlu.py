@@ -61,6 +61,10 @@ class MovieNLU(Service):
             if user_utterance.replace(' ', '').endswith(bye):
                 return {'user_acts': [UserAct(user_utterance, UserActionType.Bye)]}
 
+        for thank in ('thanks', 'thankyou'):
+            if user_utterance.replace(' ', '').endswith(thank):
+                return {'user_acts': [UserAct(user_utterance, UserActionType.Thanks)]}
+        
         for regex in MOVIE_GENRE_REGEXES:
             match = regex.search(user_utterance)
             if match:

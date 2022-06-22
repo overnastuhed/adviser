@@ -58,6 +58,8 @@ class MovieNLG(Service):
                 return {'sys_utterance': 'Which genre are you interested in?'}
             else:
                 assert False, 'Only a year and a genre can be requested'
+        elif sys_act.type == SysActionType.RequestMore:
+            return {'sys_utterance': 'Do you want to look for another movie?'}
         else:
             with_genres = sys_act.slot_values['with_genres'][0]
             primary_release_year = sys_act.slot_values['primary_release_year'][0]
