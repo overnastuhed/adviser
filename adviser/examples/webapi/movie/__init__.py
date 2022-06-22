@@ -21,3 +21,4 @@ from .nlu import MovieNLU
 from .nlg import MovieNLG
 from .domain import MovieDomain
 from .nlu_tests import get_nlu_tests
+from .nlg_tests import get_nlg_tests
