@@ -134,6 +134,7 @@ class HandcraftedBST(Service):
         for act in user_acts:
             if act.type == UserActionType.Request:
                 self.bs['requests'][act.slot] = act.score
+                self.bs['informs'][self.domain.get_primary_key()] = {str(self.domain.last_results[-1][self.domain.get_primary_key()]):1.0}
             elif act.type == UserActionType.Inform:
                 # add informs and their scores to the beliefstate
                 if act.slot in self.bs["informs"]:

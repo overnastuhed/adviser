@@ -41,6 +41,8 @@ MOVIE_RELEASE_DATE_REGEXES = [
     re.compile(r'\bin (year )?(\d{4})\b')
 ]
 
+MOVIE_CAST_REQUEST_REGEX = [re.compile(r'\b(what is the cast of the movie)\b')]
+
 class MovieNLU(Service):
     """Very simple NLU for the movie domain."""
 
@@ -77,6 +79,15 @@ class MovieNLU(Service):
             for match in matches:
                 user_acts.append(UserAct(user_utterance, UserActionType.Inform, 'with_actors', actors[actor_index]))
                 actor_index += 1
+
+        for thank in ('thanks', 'thankyou'):
+            if user_utterance.replace(' ', '').endswith(thank):
+                return {'user_acts': [UserAct(user_utterance, UserActionType.Thanks)]}
+        
+        for regex in MOVIE_CAST_REQUEST_REGEX:
+            match = regex.search(user_utterance)
+            if match:
+                user_acts.append(UserAct(user_utterance, UserActionType.Request, 'credits'))
 
         for regex in MOVIE_GENRE_REGEXES:
             match = regex.search(user_utterance)
