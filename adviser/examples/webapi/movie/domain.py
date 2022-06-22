@@ -67,9 +67,11 @@ class MovieDomain(LookupDomain):
 
             title = suggestion['original_title']
             overview = suggestion['overview']
+            tmdb_id = suggestion['id']
 
             result_dict = {
                 'artificial_id': str(len(self.last_results)),
+                'original_id' : tmdb_id,
                 'title': title,
                 'overview': overview,
                 'with_genres': constraints['with_genres'],
@@ -92,7 +94,17 @@ class MovieDomain(LookupDomain):
             entity_id (str): primary key value of the entity
             requested_slots (dict): slot-value mapping of constraints
         """
-        return [self.last_results[int(entity_id)]]
+        tmdb_id = self.last_results[int(entity_id)]['original_id']
+        if 'credits' in requested_slots:
+            full_cast = tmdb.Movies(id=tmdb_id).credits()['cast']
+            #for i in range(1):
+                #some_cast.append(cast[i]['name'])
+            some_cast = full_cast[1]['name']
+        #return [{'credits':some_cast}]
+        output = self.last_results[int(entity_id)]
+        output['credits'] = some_cast
+        #print(output)
+        return [output]
 
     def get_requestable_slots(self) -> List[str]:
         """ Returns a list of all slots requestable by the user. """

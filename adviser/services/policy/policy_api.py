@@ -448,6 +448,8 @@ class HandcraftedPolicy(Service):
         --LV
         """
         """beliefstate["requests"] or """
+        #print(beliefstate)
+        #print(q_results)
         if self.domain.get_primary_key() in beliefstate['informs']:
             self._convert_inform_by_primkey(q_results, sys_act, beliefstate)
 
@@ -572,3 +574,4 @@ class HandcraftedPolicy(Service):
             for slot in belief_state['requests']:
                 if slot not in sys_act.slot_values:
                     sys_act.add_value(slot, self.current_suggestions[0][slot])
+        
