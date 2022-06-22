@@ -69,6 +69,7 @@ class MovieDomain(LookupDomain):
             title = suggestion['original_title']
             overview = suggestion['overview']
             tmdb_id = suggestion['id']
+            rating = suggestion['vote_average']
 
             result_dict = {
                 'artificial_id': str(len(self.last_results)),
@@ -77,13 +78,15 @@ class MovieDomain(LookupDomain):
                 'overview': overview,
                 'with_genres': constraints['with_genres'],
                 'primary_release_year': constraints['primary_release_year'],
-                'with_actors': constraints['with_actors']
+                'with_actors': constraints['with_actors'],
+                'rating':rating
             }
             if any(True for _ in requested_slots):
                 cleaned_result_dict = {slot: result_dict[slot] for slot in requested_slots}
             else:
                 cleaned_result_dict = result_dict
-            self.last_results.append(cleaned_result_dict)
+            #self.last_results.append(cleaned_result_dict)
+            self.last_results.append(result_dict)
             return [cleaned_result_dict]
         else:
             return []
@@ -97,14 +100,14 @@ class MovieDomain(LookupDomain):
             requested_slots (dict): slot-value mapping of constraints
         """
         tmdb_id = self.last_results[int(entity_id)]['original_id']
+        output = self.last_results[int(entity_id)]
         if 'credits' in requested_slots:
             full_cast = tmdb.Movies(id=tmdb_id).credits()['cast']
             #for i in range(1):
                 #some_cast.append(cast[i]['name'])
             some_cast = full_cast[1]['name']
         #return [{'credits':some_cast}]
-        output = self.last_results[int(entity_id)]
-        output['credits'] = some_cast
+            output['credits'] = some_cast
         #print(output)
         return [output]
 

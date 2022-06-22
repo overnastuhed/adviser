@@ -95,6 +95,10 @@ class MovieNLG(Service):
                 output['overview'] = sys_act.slot_values['overview'][0]
             except:
                 pass
+            try:
+                output['rating'] = sys_act.slot_values['rating'][0]
+            except:
+                pass
             str_output = ""
             for k,v in output.items():
                 str_output += f'{k}:\t{v}\n'
