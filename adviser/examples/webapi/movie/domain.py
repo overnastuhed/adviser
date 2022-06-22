@@ -58,9 +58,10 @@ class MovieDomain(LookupDomain):
             requested_slots (Iterable): list of slots that should be returned in addition to the
                                         system requestable slots and the primary key
         """
-        if 'with_genres' in constraints and 'primary_release_year' in constraints:
+        if 'with_genres' in constraints and 'primary_release_year' in constraints and 'with_actors' in constraints:
 
-            suggestions = self._query(constraints['with_genres'], constraints['primary_release_year'])
+            #TODO: Handle case when no movies are found    
+            suggestions = self._query(constraints['with_genres'], constraints['primary_release_year'], constraints['with_actors'])
             suggestion = choice(suggestions)
             if suggestion is None:
                 return []
@@ -74,6 +75,7 @@ class MovieDomain(LookupDomain):
                 'overview': overview,
                 'with_genres': constraints['with_genres'],
                 'primary_release_year': constraints['primary_release_year'],
+                'with_actors': constraints['with_actors']
             }
             if any(True for _ in requested_slots):
                 cleaned_result_dict = {slot: result_dict[slot] for slot in requested_slots}
@@ -95,20 +97,20 @@ class MovieDomain(LookupDomain):
         return [self.last_results[int(entity_id)]]
 
     def get_requestable_slots(self) -> List[str]:
-        """ Returns a list of all slots requestable by the user. """
+        """ Returns a list of all slots requestable by the user. What the system tells the user. """
         return ['title', 'overview']
 
     def get_system_requestable_slots(self) -> List[str]:
-        """ Returns a list of all slots requestable by the system. """
-        return ['with_genres', 'primary_release_year']
+        """ Returns a list of all slots requestable by the system. What the system can ask the user. """
+        return ['with_genres', 'primary_release_year', 'with_actors']
 
     def get_informable_slots(self) -> List[str]:
-        """ Returns a list of all informable slots. """
-        return ['with_genres', 'primary_release_year']
+        """ Returns a list of all informable slots. What user tells the system."""
+        return ['with_genres', 'primary_release_year', 'with_actors']
 
     def get_mandatory_slots(self) -> List[str]:
         """ Returns a list of all mandatory slots. """
-        return ['with_genres', 'primary_release_year']
+        return ['with_genres', 'primary_release_year', 'with_actors']
         
     def get_default_inform_slots(self) -> List[str]:
         """ Returns a list of all default Inform slots. """
@@ -131,8 +133,9 @@ class MovieDomain(LookupDomain):
         """ Returns the slot name that will be used as the 'name' of an entry """
         return 'artificial_id'
 
-    def _query(self, with_genres, primary_release_year):
-        output = tmdb.Discover().movie(with_genres=genre2id[with_genres], primary_release_year=primary_release_year)
+    def _query(self, with_genres, primary_release_year, with_actors):
+        person = tmdb.Search().person(query = with_actors)['results'][0]['id']
+        output = tmdb.Discover().movie(with_genres=genre2id[with_genres], primary_release_year=primary_release_year, with_cast=[person])
         return output['results']
 
     def get_keyword(self):
