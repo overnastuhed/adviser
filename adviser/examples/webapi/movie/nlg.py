@@ -60,17 +60,40 @@ class MovieNLG(Service):
                 assert False, 'Only a year and a genre can be requested'
         elif sys_act.type == SysActionType.RequestMore:
             return {'sys_utterance': 'Do you want to look for another movie?'}
-        #elif sys_act.type == SysActionType.InformByName:
+       # elif sys_act.type == SysActionType.InformByName:
+       #     title = sys_act.slot_values['title'][0]
+       #     cast =  sys_act.slot_values['credits'][0]
+       #     return {'sys_utterance': f'{cast} was in movie {title}.'}
+       # else:
+       #     with_genres = sys_act.slot_values['with_genres'][0]
+       #     primary_release_year = sys_act.slot_values['primary_release_year'][0]
+       #     title = sys_act.slot_values['title'][0]
+       #     overview = sys_act.slot_values['overview'][0]
+       #     return {'sys_utterance': f'A {with_genres} movie released in {primary_release_year} is called {title}: {overview}.'}
         else:
-            with_genres = sys_act.slot_values['with_genres'][0]
-            primary_release_year = sys_act.slot_values['primary_release_year'][0]
-            title = sys_act.slot_values['title'][0]
-            overview = sys_act.slot_values['overview'][0]
+            output = dict()
             try:
-                cast =  sys_act.slot_values['credits'][0]
+                output['with_genres'] = sys_act.slot_values['with_genres'][0]
             except:
-                cast = None
-            if cast:
-                return {'sys_utterance': f'{cast} was in movie {title}.'}
-            else:
-                return {'sys_utterance': f'A {with_genres} movie released in {primary_release_year} is called {title}: {overview}.'}
+                pass
+            try:
+                output['primary_release_year'] = sys_act.slot_values['primary_release_year'][0]
+            except:
+                pass
+            try:
+                output['title'] = sys_act.slot_values['title'][0]
+            except:
+                pass
+            try:
+                output['cast'] = sys_act.slot_values['credits'][0]
+            except:
+                pass
+            try:
+                output['overview'] = sys_act.slot_values['overview'][0]
+            except:
+                pass
+            str_output = ""
+            for k,v in output.items():
+                str_output += f'{k}:\t{v}\n'
+            return {'sys_utterance': str_output[:-1]}
+

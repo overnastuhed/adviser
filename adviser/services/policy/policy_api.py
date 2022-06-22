@@ -474,7 +474,10 @@ class HandcraftedPolicy(Service):
         sys_act.type = SysActionType.InformByName
         if q_results:
             result = q_results[0]  # currently return just the first result
-            keys = list(result.keys())  # should represent all user specified constraints
+            keys_r = list(result.keys())  # should represent all user specified constraints
+            requests = list(belief_state['requests'].keys())
+
+            keys = set.intersection(set(keys_r), set(requests))
 
             # add slots + values (where available) to the sys_act
             for k in keys:
@@ -485,9 +488,9 @@ class HandcraftedPolicy(Service):
                 name = self._get_name(belief_state)
                 sys_act.add_value(self.domain_key, name)
             # Add default Inform slots
-            for slot in self.domain.get_default_inform_slots():
-                if slot not in sys_act.slot_values:
-                    sys_act.add_value(slot, result[slot])
+            #for slot in self.domain.get_default_inform_slots():
+                #if slot not in sys_act.slot_values:
+                    #sys_act.add_value(slot, result[slot])
         else:
             sys_act.add_value(self.domain_key, 'none')
 
