@@ -35,6 +35,10 @@ class SysActFactory():
         self.sysact.add_value("overview", text)
         return self
 
+    def rating(self, text=None):
+        self.sysact.add_value("vote_average", text)
+        return self
+
     def build(self):
         return self.sysact
 
@@ -49,12 +53,16 @@ class BeliefStateFactory():
         return self
 
     def request(self, slot):
-        self.bs['request'][slot] = 1.0
+        self.bs['requests'][slot] = 1.0
         self.bs['user_acts'].add(UserActionType.Request)
         return self
 
     def request_alternative(self):
         self.bs['user_acts'].add(UserActionType.RequestAlternatives)
+        return self
+
+    def bye(self):
+        self.bs['user_acts'].add(UserActionType.Bye)
         return self
 
     def build(self):

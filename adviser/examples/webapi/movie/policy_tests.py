@@ -52,5 +52,31 @@ def get_policy_tests():
                             .actor('Tom Cruise')
                             .build()
                         }
+        },
+        {
+            'input': BeliefStateFactory()
+                        .inform('primary_release_year', '1986')
+                        .inform('with_genres', 'action')
+                        .inform('with_actors', 'Tom Cruise')    
+                        .bye()            
+                        .build(), 
+            'expected_output': {
+                'sys_act': SysActFactory(SysActionType.Bye)
+                            .build()
+                        }
+        },
+        {
+            'input': BeliefStateFactory()
+                        .inform('primary_release_year', '1986')
+                        .inform('with_genres', 'action')
+                        .inform('with_actors', 'Tom Cruise')    
+                        .request('rating')            
+                        .build(), 
+            'expected_output': {
+                'sys_act': SysActFactory(SysActionType.InformByName)
+                            .id('0')
+                            .rating('10')
+                            .build()
+                        }
         }
     ]
