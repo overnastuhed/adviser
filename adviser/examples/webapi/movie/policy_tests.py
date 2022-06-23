@@ -75,7 +75,7 @@ def get_policy_tests():
             'expected_output': {
                 'sys_act': SysActFactory(SysActionType.InformByName)
                             .id('0')
-                            .rating('10')
+                            .rating('7')
                             .build()
                         }
         }
