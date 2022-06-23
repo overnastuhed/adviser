@@ -448,8 +448,6 @@ class HandcraftedPolicy(Service):
         --LV
         """
         """beliefstate["requests"] or """
-        #print(beliefstate)
-        #print(q_results)
         if self.domain.get_primary_key() in beliefstate['informs']:
             self._convert_inform_by_primkey(q_results, sys_act, beliefstate)
 
@@ -474,10 +472,7 @@ class HandcraftedPolicy(Service):
         sys_act.type = SysActionType.InformByName
         if q_results:
             result = q_results[0]  # currently return just the first result
-            keys_r = list(result.keys())  # should represent all user specified constraints
-            requests = list(belief_state['requests'].keys())
-
-            keys = set.intersection(set(keys_r), set(requests))
+            keys = list(result.keys())  # should represent all user specified constraints
 
             # add slots + values (where available) to the sys_act
             for k in keys:
@@ -488,9 +483,9 @@ class HandcraftedPolicy(Service):
                 name = self._get_name(belief_state)
                 sys_act.add_value(self.domain_key, name)
             # Add default Inform slots
-            #for slot in self.domain.get_default_inform_slots():
-                #if slot not in sys_act.slot_values:
-                    #sys_act.add_value(slot, result[slot])
+            for slot in self.domain.get_default_inform_slots():
+                if slot not in sys_act.slot_values:
+                    sys_act.add_value(slot, result[slot])
         else:
             sys_act.add_value(self.domain_key, 'none')
 
@@ -577,4 +572,3 @@ class HandcraftedPolicy(Service):
             for slot in belief_state['requests']:
                 if slot not in sys_act.slot_values:
                     sys_act.add_value(slot, self.current_suggestions[0][slot])
-        

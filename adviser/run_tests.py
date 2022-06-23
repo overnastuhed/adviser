@@ -12,6 +12,13 @@ def load_movie_nlg_tests():
     nlg = MovieNLG(domain=domain)
     return nlg, get_nlg_tests()
 
+def load_movie_policy_tests():
+    from examples.webapi.movie import MoviePolicy, MovieDomain, get_policy_tests
+    domain = MovieDomain()
+    policy = MoviePolicy(domain=domain)
+    return policy, get_policy_tests()
+
+
 def run_nlu_tests(nlu, tests):
     successful_test_count = 0
     for test in tests:
@@ -61,6 +68,26 @@ def run_nlg_tests(nlg, tests):
             successful_test_count += 1
     print(f'{successful_test_count}/{len(tests)} NLG TESTS SUCCESSFUL')
 
+def run_policy_tests(policy, tests):
+    successful_test_count = 0
+    for test in tests:
+        input = test['input']
+        expected_output = test['expected_output']
+
+        output = policy.choose_sys_act(beliefstate=input)
+
+        if expected_output != output:
+            print('---------------FAILED TEST-----------------')
+            print('Input: ', input)
+            print('Expected output: ')
+            print(expected_output)
+            print('Actual output: ')
+            print(output)
+            print('-------------------------------------------')
+        else:
+            successful_test_count += 1
+    print(f'{successful_test_count}/{len(tests)} POLICY TESTS SUCCESSFUL')
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='ADVISER 2.0 Dialog System Test Runner')
     parser.add_argument('domain', choices=['movies'],
@@ -68,7 +95,7 @@ if __name__ == '__main__':
                         help="Chat domain to test. \n",
                         default="movies")
     parser.add_argument('-m', '--module', 
-                        choices=['nlu', 'nlg', 'all'], 
+                        choices=['nlu', 'nlg', 'policy', 'all'], 
                         help="Dialog system modules to test.\n",
                         default="all")
     args = parser.parse_args()
@@ -88,7 +115,13 @@ if __name__ == '__main__':
             nlg, tests = load_movie_nlg_tests()
         else:
             raise NotImplementedError
-
         run_nlg_tests(nlg, tests)
+
+    if args.module == 'policy' or args.module == 'all':
+        if args.domain == 'movies':
+            policy, tests = load_movie_policy_tests()
+        else:
+            raise NotImplementedError
+        run_policy_tests(policy, tests)
 
     
