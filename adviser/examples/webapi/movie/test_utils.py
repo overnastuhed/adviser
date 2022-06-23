@@ -31,10 +31,6 @@ class SysActFactory():
         self.sysact.add_value("title", text if not any else '*')
         return self
 
-    def cast(self, text=None, any=False):
-        self.sysact.add_value("credits", text if not any else '*')
-        return self
-
     def overview(self, text=None, any=False):
         self.sysact.add_value("overview", text if not any else '*')
         return self
