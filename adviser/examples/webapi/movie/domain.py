@@ -58,10 +58,11 @@ class MovieDomain(LookupDomain):
             requested_slots (Iterable): list of slots that should be returned in addition to the
                                         system requestable slots and the primary key
         """
-        if 'with_genres' in constraints and 'primary_release_year' in constraints and 'with_actors' in constraints:
+        if self.has_enough_constraints_to_query(constraints):
 
-            #TODO: Handle case when no movies are found    
-            suggestions = self._query(constraints['with_genres'], constraints['primary_release_year'], constraints['with_actors'])
+            #TODO: Handle case when no movies are found   
+            years = self._get_requested_years(constraints) 
+            suggestions = self._query(constraints['with_genres'], years, constraints['with_actors'])
             suggestion = choice(suggestions)
             if suggestion is None:
                 return []
@@ -70,17 +71,19 @@ class MovieDomain(LookupDomain):
             overview = suggestion['overview']
             tmdb_id = suggestion['id']
             rating = suggestion['vote_average']
+            release_year = self._get_year_from_date(suggestion['release_date'])
 
             result_dict = {
                 'artificial_id': str(len(self.last_results)),
                 'original_id' : tmdb_id,
                 'title': title,
                 'overview': overview,
+                'primary_release_year': release_year,
                 'with_genres': constraints['with_genres'],
-                'primary_release_year': constraints['primary_release_year'],
                 'with_actors': constraints['with_actors'],
                 'rating':rating
             }
+
             if any(True for _ in requested_slots):
                 cleaned_result_dict = {slot: result_dict[slot] for slot in requested_slots}
             else:
@@ -121,7 +124,7 @@ class MovieDomain(LookupDomain):
 
     def get_informable_slots(self) -> List[str]:
         """ Returns a list of all informable slots. What user tells the system."""
-        return ['with_genres', 'primary_release_year', 'with_actors']
+        return ['with_genres', 'primary_release_year', 'release_decade', 'with_actors']
 
     def get_mandatory_slots(self) -> List[str]:
         """ Returns a list of all mandatory slots. """
@@ -152,6 +155,21 @@ class MovieDomain(LookupDomain):
         person = tmdb.Search().person(query = with_actors)['results'][0]['id']
         output = tmdb.Discover().movie(with_genres=genre2id[with_genres], primary_release_year=primary_release_year, with_cast=[person])
         return output['results']
+
+    def has_enough_constraints_to_query(self, constraints):
+        return 'with_genres' in constraints \
+            and ('primary_release_year' in constraints or 'release_decade' in constraints) \
+            and 'with_actors' in constraints 
+
+    def _get_requested_years(self, constraints):
+        if 'primary_release_year' in constraints:
+            return constraints['primary_release_year']
+        elif 'release_decade' in constraints:
+            decade = constraints['release_decade']
+            return [decade[0:3] + str(n) for n in range(10)]
+        
+    def _get_year_from_date(self, date_str):
+        return datetime.strptime(date_str, '%Y-%m-%d').year
 
     def get_keyword(self):
         return 'movie'

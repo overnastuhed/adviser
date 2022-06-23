@@ -27,5 +27,10 @@ def get_year_tests():
             'input': "What's that movie with Christopher Lloyd from 85?", 
             'expected_output': [ UserAct("", UserActionType.Inform, 'with_actors', "Christopher Lloyd"), 
                                 UserAct("", UserActionType.Inform, 'primary_release_year', "1985")  ]
+        },
+        {
+            'input': "Give me a comedy from the 90s", 
+            'expected_output': [ UserAct("", UserActionType.Inform, 'with_genres', "comedy"), 
+                                UserAct("", UserActionType.Inform, 'release_decade', "1990")  ]
         }
     ]

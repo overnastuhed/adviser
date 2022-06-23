@@ -7,36 +7,40 @@ class SysActFactory():
     def __init__(self, actionType: SysActionType):
         self.sysact = SysAct(actionType)
 
-    def id(self, text=None):
-        self.sysact.add_value("artificial_id", text)
+    def id(self, text=None, any=False):
+        self.sysact.add_value("artificial_id", text if not any else '*')
         return self
     
-    def actor(self, text=None):
-        self.sysact.add_value("with_actors", text)
+    def actor(self, text=None, any=False):
+        self.sysact.add_value("with_actors", text if not any else '*')
         return self
 
-    def genre(self, text=None):
-        self.sysact.add_value("with_genres", text)
+    def genre(self, text=None, any=False):
+        self.sysact.add_value("with_genres", text if not any else '*')
         return self
 
-    def year(self, text=None):
-        self.sysact.add_value("primary_release_year", text)
+    def year(self, text=None, any=False):
+        self.sysact.add_value("primary_release_year", text if not any else '*')
         return self
 
-    def title(self, text=None):
-        self.sysact.add_value("title", text)
+    def decade(self, text=None, any=False):
+        self.sysact.add_value("release_decade", text if not any else '*')
         return self
 
-    def cast(self, text=None):
-        self.sysact.add_value("credits", text)
+    def title(self, text=None, any=False):
+        self.sysact.add_value("title", text if not any else '*')
         return self
 
-    def overview(self, text=None):
-        self.sysact.add_value("overview", text)
+    def cast(self, text=None, any=False):
+        self.sysact.add_value("credits", text if not any else '*')
         return self
 
-    def rating(self, text=None):
-        self.sysact.add_value("vote_average", text)
+    def overview(self, text=None, any=False):
+        self.sysact.add_value("overview", text if not any else '*')
+        return self
+
+    def rating(self, text=None, any=False):
+        self.sysact.add_value("vote_average", text if not any else '*')
         return self
 
     def build(self):

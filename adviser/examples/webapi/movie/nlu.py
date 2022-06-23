@@ -38,9 +38,12 @@ ACTOR_NAME_REGEXES = [
 
 
 MOVIE_RELEASE_DATE_REGEXES = [
-     
     re.compile(r'\b((?:19[0-9]|20(?:0|1|2))\d)\b'),   # Matches any year 1900 - 2029
     re.compile(r'\b(?:from|in|released) ([1-9]\d)\b') # or a more specific mention of a year by two numbers (such as '...released *in 95*...')
+]
+
+MOVIE_RELEASE_DECADE_REGEXES = [
+    re.compile(r"\b(?:from|in|released) (?:the )?([1-9]0)'?s\b") # Matches a decade (the 90s, 80's etc)
 ]
 
 MOVIE_CAST_REQUEST_REGEX = [re.compile(r'\b(what is the cast of the movie)\b')]
@@ -111,6 +114,13 @@ class MovieNLU(Service):
                 if len(year) == 2:
                     year = '19' + year
                 user_acts.append(UserAct(user_utterance, UserActionType.Inform, 'primary_release_year', year))
+
+        for regex in MOVIE_RELEASE_DECADE_REGEXES:
+            match = regex.search(user_utterance)
+            if match:
+                decade = '19' + match.group(1)
+                user_acts.append(UserAct(user_utterance, UserActionType.Inform, 'release_decade', decade))
+
 
         self.debug_logger.dialog_turn("User Actions: %s" % str(user_acts))
 

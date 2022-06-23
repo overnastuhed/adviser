@@ -68,6 +68,16 @@ def run_nlg_tests(nlg, tests):
             successful_test_count += 1
     print(f'{successful_test_count}/{len(tests)} NLG TESTS SUCCESSFUL')
 
+def compare_system_acts(a, b):
+    if a.type != b.type:
+        return False
+    if len(a.slot_values) != len(b.slot_values):
+        return False
+    for slot in a.slot_values.keys():
+        if a.slot_values[slot] != b.slot_values[slot] and a.slot_values[slot] != ['*'] and b.slot_values[slot] != ['*']:
+            return False
+    return True
+
 def run_policy_tests(policy, tests):
     successful_test_count = 0
     for test in tests:
@@ -76,7 +86,7 @@ def run_policy_tests(policy, tests):
 
         output = policy.choose_sys_act(beliefstate=input)
 
-        if expected_output != output:
+        if not compare_system_acts(expected_output['sys_act'], output['sys_act']):
             print('---------------FAILED TEST-----------------')
             print('Input: ', input)
             print('Expected output: ')

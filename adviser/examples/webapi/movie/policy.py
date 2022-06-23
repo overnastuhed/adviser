@@ -110,7 +110,7 @@ class MoviePolicy(HandcraftedPolicy):
             sys_act.type = SysActionType.Bad
             return sys_act, {'last_action': sys_act}"""
 
-        if not self._mandatory_requests_fulfilled(beliefstate):
+        if not self.has_enough_info_to_suggest(beliefstate):
             sys_act = SysAct()
             sys_act.type = SysActionType.Request
             sys_act.add_value(self._get_open_mandatory_slot(beliefstate), None)
@@ -213,3 +213,12 @@ class MoviePolicy(HandcraftedPolicy):
                     #sys_act.add_value(slot, result[slot])
         else:
             sys_act.add_value(self.domain_key, 'none')
+
+
+    def has_enough_info_to_suggest(self, belief_state: BeliefState):
+        """whether or not all mandatory slots have a value
+
+        Arguments:
+        """
+        filled_slots, _ = self._get_constraints(belief_state)
+        return self.domain.has_enough_constraints_to_query(filled_slots)

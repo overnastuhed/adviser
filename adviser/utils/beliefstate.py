@@ -219,7 +219,7 @@ class BeliefState:
         candidates = self.get_most_probable_inf_beliefs(consider_NONE=True, threshold=0.7,
                                                         max_results=1)
         constraints = self._remove_dontcare_slots(candidates)
-        db_matches = self.domain.find_entities(constraints, self.domain.get_informable_slots())
+        db_matches = self.domain.find_entities(constraints)
         num_matches = len(db_matches)
 
         # check if matching db entities could be discriminated by more
