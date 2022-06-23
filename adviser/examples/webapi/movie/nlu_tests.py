@@ -1,7 +1,7 @@
 from utils import UserAct, UserActionType
 
 def get_nlu_tests():
-    return get_actor_tests() + get_year_tests()
+    return get_actor_tests() + get_year_tests() + get_rating_tests()
 
 def get_actor_tests():
     return [
@@ -32,5 +32,29 @@ def get_year_tests():
             'input': "Give me a comedy from the 90s", 
             'expected_output': [ UserAct("", UserActionType.Inform, 'with_genres', "comedy"), 
                                 UserAct("", UserActionType.Inform, 'release_decade', "1990")  ]
+        }
+    ]
+
+def get_rating_tests():
+    return [
+        {
+            'input': "What's the rating?", 
+            'expected_output': [ UserAct("", UserActionType.Request, 'rating') ]
+        },
+        {
+            'input': "What is its score?", 
+            'expected_output': [ UserAct("", UserActionType.Request, 'rating') ]
+        },
+        {
+            'input': "Is it good?", 
+            'expected_output': [ UserAct("", UserActionType.Request, 'rating') ]
+        },
+        {
+            'input': "Is it a bad movie?", 
+            'expected_output': [ UserAct("", UserActionType.Request, 'rating') ]
+        },
+        {
+            'input': "How good is it?", 
+            'expected_output': [ UserAct("", UserActionType.Request, 'rating') ]
         }
     ]

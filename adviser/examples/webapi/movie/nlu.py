@@ -48,8 +48,7 @@ MOVIE_RELEASE_DECADE_REGEXES = [
 
 MOVIE_CAST_REQUEST_REGEX = [re.compile(r'\b(what is the cast of the movie)\b')]
 
-MOVIE_RATING_REQUEST_REGEX = [re.compile(r'\b(what is the rating of the movie)\b')]
-
+MOVIE_RATING_REQUEST_REGEX = [re.compile(r'\b(rating|score|is it (?:a )?(?:good|bad|ok)|how (?:good|bad|ok) is it)\b')]
 
 class MovieNLU(Service):
     """Very simple NLU for the movie domain."""
