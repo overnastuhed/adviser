@@ -24,8 +24,8 @@ from random import choice
 
 from utils.domain.lookupdomain import LookupDomain
 
-API_KEY = 'EnterYourPersonalAPIKeyFromTMDB'
-tmdb.API_KEY = input('TMDB API_KEY: ')
+#API_KEY = 'EnterYourPersonalAPIKeyFromTMDB'
+tmdb.API_KEY = open("examples/webapi/movie/api_key.txt", "r").read()
 
 genres = tmdb.Genres().movie_list()['genres']
 genre2id = dict()
@@ -62,35 +62,58 @@ class MovieDomain(LookupDomain):
 
             #TODO: Handle case when no movies are found   
             years = self._get_requested_years(constraints) 
-            suggestions = self._query(constraints['with_genres'], years, constraints['with_actors'])
-            suggestion = choice(suggestions)
-            if suggestion is None:
+            if 'with_actors' in constraints:
+                if 'with_genres' in constraints:
+                    suggestions = self._query(constraints['with_genres'], years, constraints['with_actors'])
+                else:
+                    suggestions = self._query(None, years, constraints['with_actors'])
+            else:
+                if 'with_genres' in constraints:
+                    suggestions = self._query(constraints['with_genres'], years, None)
+                else:
+                    suggestions = None
+            
+            #suggestion = choice(suggestions)
+            if suggestions is None:
                 return []
 
-            title = suggestion['original_title']
-            overview = suggestion['overview']
-            tmdb_id = suggestion['id']
-            rating = suggestion['vote_average']
-            release_year = self._get_year_from_date(suggestion['release_date'])
+            output = []
 
-            result_dict = {
-                'artificial_id': str(len(self.last_results)),
-                'original_id' : tmdb_id,
-                'title': title,
-                'overview': overview,
-                'primary_release_year': release_year,
-                'with_genres': constraints['with_genres'],
-                'with_actors': constraints['with_actors'],
-                'rating':rating
-            }
+            #if random:
+                #suggestions = list(choice(suggestions))
 
-            if any(True for _ in requested_slots):
-                cleaned_result_dict = {slot: result_dict[slot] for slot in requested_slots}
-            else:
-                cleaned_result_dict = result_dict
+            for suggestion in suggestions:
+                title = suggestion['original_title']
+                overview = suggestion['overview']
+                tmdb_id = suggestion['id']
+                rating = suggestion['vote_average']
+                release_year = self._get_year_from_date(suggestion['release_date'])
+
+                result_dict = {
+                    'artificial_id': str(len(self.last_results)),
+                    'original_id' : tmdb_id,
+                    'title': title,
+                    'overview': overview,
+                    'primary_release_year': release_year,
+                    #'with_genres': constraints['with_genres'],
+                    #'with_actors': constraints['with_actors'],
+                    'rating':rating
+                }
+
+                if 'with_genres' in constraints:
+                    result_dict['with_genres'] = constraints['with_genres']
+                if 'with_actors' in constraints:
+                    result_dict['with_actors'] = constraints['with_actors']
+
+                if any(True for _ in requested_slots):
+                    cleaned_result_dict = {slot: result_dict[slot] for slot in requested_slots}
+                else:
+                    cleaned_result_dict = result_dict
             #self.last_results.append(cleaned_result_dict)
-            self.last_results.append(result_dict)
-            return [cleaned_result_dict]
+                self.last_results.append(result_dict)
+
+                output.append(cleaned_result_dict)
+            return output
         else:
             return []
 
@@ -124,11 +147,14 @@ class MovieDomain(LookupDomain):
 
     def get_informable_slots(self) -> List[str]:
         """ Returns a list of all informable slots. What user tells the system."""
-        return ['with_genres', 'primary_release_year', 'release_decade', 'with_actors']
+        #return ['with_genres', 'primary_release_year', 'release_decade', 'with_actors']
+        #return ['with_genres', 'primary_release_year', 'with_actors']
+        return ['primary_release_year']
 
     def get_mandatory_slots(self) -> List[str]:
         """ Returns a list of all mandatory slots. """
-        return ['with_genres', 'primary_release_year', 'with_actors']
+        #return ['with_genres', 'primary_release_year', 'with_actors']
+        return []
         
     def get_default_inform_slots(self) -> List[str]:
         """ Returns a list of all default Inform slots. """
@@ -151,15 +177,35 @@ class MovieDomain(LookupDomain):
         """ Returns the slot name that will be used as the 'name' of an entry """
         return 'artificial_id'
 
+
     def _query(self, with_genres, primary_release_year, with_actors):
-        person = tmdb.Search().person(query = with_actors)['results'][0]['id']
-        output = tmdb.Discover().movie(with_genres=genre2id[with_genres], primary_release_year=primary_release_year, with_cast=[person])
+
+        if with_genres == None:
+            try:
+                person = tmdb.Search().person(query = with_actors)['results'][0]['id']
+            except:
+                return None
+            output = tmdb.Discover().movie(primary_release_year=primary_release_year, with_cast=[person])
+
+        elif with_actors == None:
+            output = tmdb.Discover().movie(with_genres=genre2id[with_genres], primary_release_year=primary_release_year)
+        else:
+            try:
+                person = tmdb.Search().person(query = with_actors)['results'][0]['id']
+            except:
+                return None
+            output = tmdb.Discover().movie(with_genres=genre2id[with_genres], primary_release_year=primary_release_year, with_cast=[person])
+
         return output['results']
 
+
     def has_enough_constraints_to_query(self, constraints):
-        return 'with_genres' in constraints \
-            and ('primary_release_year' in constraints or 'release_decade' in constraints) \
-            and 'with_actors' in constraints 
+        #return 'with_genres' in constraints \
+            #and ('primary_release_year' in constraints or 'release_decade' in constraints) \
+            #and 'with_actors' in constraints 
+        return ('with_genres' in constraints or 'with_actors' in constraints) \
+            and ('primary_release_year' in constraints or 'release_decade' in constraints)
+
 
     def _get_requested_years(self, constraints):
         if 'primary_release_year' in constraints:

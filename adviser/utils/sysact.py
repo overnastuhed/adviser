@@ -36,6 +36,8 @@ class SysActionType(Enum):
     Bad = 'bad'
     Bye = 'closingmsg'
     ConfirmRequest = 'confreq'
+    SuggestRequest = 'suggest_request'
+    ShowRandom = 'show_random'
 
 
 class SysAct(object):

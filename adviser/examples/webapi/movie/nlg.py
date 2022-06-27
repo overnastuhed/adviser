@@ -59,7 +59,12 @@ class MovieNLG(Service):
             elif slot == 'with_actors':
                 return {'sys_utterance': 'What actors are you interested in?'}
             else:
+                # This should probably be changed
                 assert False, 'Only a year and a genre can be requested'
+        elif sys_act.type == SysActionType.SuggestRequest:
+            features = list(sys_act.slot_values.keys())
+            f_srt = ", ".join(features)
+            return {'sys_utterance': f'I have found several movies fitting you query. Do you want me to show a random movie? Otherwise, you can additionally specify the following features: {f_srt}.'}
         elif sys_act.type == SysActionType.RequestMore:
             return {'sys_utterance': 'Do you want to look for another movie?'}
        # elif sys_act.type == SysActionType.InformByName:

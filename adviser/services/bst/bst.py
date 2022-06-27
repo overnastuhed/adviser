@@ -54,15 +54,26 @@ class HandcraftedBST(Service):
         # save last turn to memory
         self.bs.start_new_turn()
         if user_acts:
-            self._reset_informs(user_acts)
-            self._reset_requests()
-            self.bs["user_acts"] = self._get_all_usr_action_types(user_acts)
+            thank = False
+            for act in user_acts:
+                if act.type == UserActionType.Thanks:
+                    thank = True
+            if len(user_acts)== 1 and thank:
+                self._reset_all_informs()
+                self.bs["user_acts"] = self._get_all_usr_action_types(user_acts)
+                self._reset_requests()
+                self.bs["num_matches"] = 0
+                self.bs["discriminable"] = True
+            else:
+                self._reset_informs(user_acts)
+                self._reset_requests()
+                self.bs["user_acts"] = self._get_all_usr_action_types(user_acts)
 
-            self._handle_user_acts(user_acts)
+                self._handle_user_acts(user_acts)
 
-            num_entries, discriminable = self.bs.get_num_dbmatches()
-            self.bs["num_matches"] = num_entries
-            self.bs["discriminable"] = discriminable
+                num_entries, discriminable = self.bs.get_num_dbmatches()
+                self.bs["num_matches"] = num_entries
+                self.bs["discriminable"] = discriminable
 
         return {'beliefstate': self.bs}
 
@@ -86,6 +97,14 @@ class HandcraftedBST(Service):
         slots = {act.slot for act in acts if act.type == UserActionType.Inform}
         for slot in [s for s in self.bs['informs']]:
             if slot in slots:
+                del self.bs['informs'][slot]
+    
+    def _reset_all_informs(self):
+        """
+            If the user specifies a new value for a given slot, delete the old
+            entry from the beliefstate
+        """
+        for slot in [s for s in self.bs['informs']]:
                 del self.bs['informs'][slot]
 
     def _reset_requests(self):
@@ -134,7 +153,7 @@ class HandcraftedBST(Service):
         for act in user_acts:
             if act.type == UserActionType.Request:
                 self.bs['requests'][act.slot] = act.score
-                self.bs['informs'][self.domain.get_primary_key()] = {str(self.domain.last_results[-1][self.domain.get_primary_key()]):1.0}
+                #self.bs['informs'][self.domain.get_primary_key()] = {str(self.domain.last_results[-1][self.domain.get_primary_key()]):1.0}
             elif act.type == UserActionType.Inform:
                 # add informs and their scores to the beliefstate
                 if act.slot in self.bs["informs"]:
