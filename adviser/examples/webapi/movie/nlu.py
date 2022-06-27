@@ -24,10 +24,11 @@ from typing import List
 from utils import UserAct, UserActionType, DiasysLogger, SysAct, BeliefState
 from services.service import Service, PublishSubscribe
 from .actor_name_extractor import ActorNameExtractor
+from . import genre_synonyms
 # simple list of regexes
 
 MOVIE_GENRE_REGEXES = [
-    re.compile(r'\b(action)\b|\b(adventure)\b|\b(animation)\b|\b(comedy)\b|\b(crime)\b|\b(documentary)\b|\b(drama)\b|\b(family)\b|\b(fantasy)\b|\b(history)\b|\b(horror)\b|\b(music)\b|\b(mystery)\b|\b(romance)\b|\b(science fiction)\b|\b(tv movie)\b|\b(thriller)\b|\b(war)\b|\b(western)\b')
+    re.compile(r'\b(' + r')\b|\b('.join(genre_synonyms.LIST) + r')\b')
 ]
 
 ACTOR_NAME_PLACEHOLDER = 'actor_placeholder'
@@ -104,7 +105,9 @@ class MovieNLU(Service):
         for regex in MOVIE_GENRE_REGEXES:
             match = regex.search(user_utterance)
             if match:
-                user_acts.append(UserAct(user_utterance, UserActionType.Inform, 'with_genres', match.group(0)))
+                genre = match.group(0)
+                normalized_genre = genre_synonyms.MAPPING[genre]
+                user_acts.append(UserAct(user_utterance, UserActionType.Inform, 'with_genres', normalized_genre))
 
         for regex in MOVIE_RELEASE_DATE_REGEXES:
             match = regex.search(user_utterance)

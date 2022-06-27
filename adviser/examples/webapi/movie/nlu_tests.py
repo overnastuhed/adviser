@@ -1,13 +1,30 @@
 from utils import UserAct, UserActionType
 
 def get_nlu_tests():
-    return get_actor_tests() + get_year_tests() + get_rating_tests()
+    return get_actor_tests() + get_year_tests() + get_rating_tests() + get_genre_tests()
 
 def get_actor_tests():
     return [
         {
             'input': 'I want to watch a movie with Tom Cruise', 
             'expected_output': [ UserAct("", UserActionType.Inform, 'with_actors', "Tom Cruise") ]
+        }
+    ]
+
+def get_genre_tests():
+    return [
+        {
+            'input': 'I want a historical movie.', 
+            'expected_output': [ UserAct("", UserActionType.Inform, 'with_genres', "history") ]
+        },
+        {
+            'input': 'I want to watch a scary movie.', 
+            'expected_output': [ UserAct("", UserActionType.Inform, 'with_genres', "horror") ]
+        },
+        {
+            'input': 'Recommend me an animated movie from 2020.', 
+            'expected_output': [ UserAct("", UserActionType.Inform, 'with_genres', "animation"),
+                                UserAct("", UserActionType.Inform, 'primary_release_year', "2020")  ]
         }
     ]
 
