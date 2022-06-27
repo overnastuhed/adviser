@@ -77,6 +77,9 @@ class MovieNLG(Service):
        #     title = sys_act.slot_values['title'][0]
        #     overview = sys_act.slot_values['overview'][0]
        #     return {'sys_utterance': f'A {with_genres} movie released in {primary_release_year} is called {title}: {overview}.'}
+        if sys_act.type == SysActionType.ShowRandom:
+            str_output = self.debug_output(sys_act)
+            return {'sys_utterance': "I've found several movies fitting the query, but no further selection is possible. Showing a random one:\n" + str_output}
         else:          
             #output = self.debug_output(sys_act)
             output = InformTemplates(sys_act.slot_values).generate()
@@ -95,6 +98,10 @@ class MovieNLG(Service):
             pass
         try:
             output['title'] = sys_act.slot_values['title'][0]
+        except:
+            pass
+        try:
+            output['cast'] = sys_act.slot_values['credits'][0]
         except:
             pass
         try:

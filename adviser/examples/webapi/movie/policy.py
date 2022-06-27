@@ -158,7 +158,6 @@ class MoviePolicy(HandcraftedPolicy):
         
         # Otherwise we need to query the db to determine next action
         if UserActionType.RequestRandom in beliefstate['user_acts'] :
-            print('here')
             self.random = True
             results = self._query_db(beliefstate)
             #results = self._query_db(beliefstate, True)
