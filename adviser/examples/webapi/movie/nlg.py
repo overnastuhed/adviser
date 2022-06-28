@@ -101,7 +101,7 @@ class MovieNLG(Service):
         except:
             pass
         try:
-            output['cast'] = sys_act.slot_values['credits'][0]
+            output['cast'] = sys_act.slot_values['with_actors'][0]
         except:
             pass
         try:
@@ -127,11 +127,11 @@ class InformTemplates():
         self.slot_values = slot_values
         
     def _pick_template(self):
-        if "vote_average" in self.slot_values:
+        if "rating" in self.slot_values:
             return "The {genre} {title} {released_in} {release_year} {starring} {actors} is rated {rating}."
         elif "primary_release_year" in self.slot_values:
             return "The {genre} {title} {starring} {actors} was released in {release_year}."
-        elif "with_actors" in self.slot_values:
+        elif "with_actors" in self.slot_values or "credits" in self.slot_values:
             return "The {genre} {title} stars {actors}."
         elif "with_genres" in self.slot_values:
             return "{title} is {a_or_an_genre}."
@@ -168,6 +168,8 @@ class InformTemplates():
 
     def _actors(self):
         actors = self._get_slot_value('with_actors')
+        if not actors:
+            actors = self._get_slot_value('credits')
         if actors:
             if len(actors) == 1:
                 return f"{actors[0]}" 
@@ -199,6 +201,8 @@ class InformTemplates():
 
     def _rating(self):
         rating = self._get_slot_value('vote_average')
+        if not rating:
+            rating = self._get_slot_value('rating')
         if rating:
             return f"{rating[0]}"
         else:

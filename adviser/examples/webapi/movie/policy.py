@@ -225,33 +225,6 @@ class MoviePolicy(HandcraftedPolicy):
         # Otherwise action type will be inform, so return an empty inform (to be filled in later)
         sys_act.type = SysActionType.InformByName
         return sys_act
-    
-    # This belongs to the case when multiple instances are returned by api
-    # TODO: put this to a separate file?
-    # TODO: dontcare's for now are empty...
-    def _get_constraints(self, beliefstate: BeliefState):
-        """Reads the belief state and extracts any user specified constraints and any constraints
-           the user indicated they don't care about, so the system knows not to ask about them
-
-        Args:
-            belief_state (dict): dictionary tracking the current system beliefs
-
-        Return:
-            (tuple): dict of user requested slot names and their values and list of slots the user
-                     doesn't care about
-
-        --LV
-        """
-        slots = {}
-        # parts of the belief state which don't contain constraints
-        dontcare = [slot for slot in beliefstate['informs'] if "dontcare" in beliefstate["informs"][slot]]
-        informs = beliefstate["informs"]
-        slots = {}
-        for slot in informs:
-            if slot not in dontcare:
-                for value in informs[slot]:
-                    slots[slot] = value
-        return slots, dontcare
 
     def _find_possible_requests(self, temp: Dict[str, List[str]], belief_state: BeliefState):
         """
