@@ -25,7 +25,15 @@ def run_nlu_tests(nlu, tests):
         input = test['input']
         output = nlu.extract_user_acts(input)['user_acts']
 
-        expected_output = test['expected_output']
+        try:
+            expected_output = test['expected_output']
+        except Exception as e:
+            print('---------------FAILED TEST-----------------')
+            print('Input: ', input)
+            print('Failed with exception: ')
+            print(e)
+            print('-------------------------------------------')
+            continue
 
         missing_acts = []
         for act in expected_output:
@@ -54,7 +62,15 @@ def run_nlg_tests(nlg, tests):
         input = test['input']
         expected_output = test['expected_output']
 
-        output = nlg.generate_system_utterance(sys_act=input)
+        try:
+            output = nlg.generate_system_utterance(sys_act=input)
+        except Exception as e:
+            print('---------------FAILED TEST-----------------')
+            print('Input: ', input)
+            print('Failed with exception: ')
+            print(e)
+            print('-------------------------------------------')
+            continue
 
         if expected_output != output:
             print('---------------FAILED TEST-----------------')
@@ -84,7 +100,16 @@ def run_policy_tests(policy, tests):
         input = test['input']
         expected_output = test['expected_output']
 
-        output = policy.choose_sys_act(beliefstate=input)
+        try:
+            output = policy.choose_sys_act(beliefstate=input)
+        except Exception as e:
+            print('---------------FAILED TEST-----------------')
+            print('Input: ', input)
+            print('Failed with exception: ')
+            print(e)
+            print('-------------------------------------------')
+            continue
+
 
         if not compare_system_acts(expected_output['sys_act'], output['sys_act']):
             print('---------------FAILED TEST-----------------')
