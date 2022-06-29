@@ -49,101 +49,15 @@ class MovieDomain(LookupDomain):
 
         self.last_results = []
 
-    def find_entities(self, constraints: dict, requested_slots: Iterable = iter(())):
-        """ Returns all entities from the data backend that meet the constraints.
-
-        Args:
-            constraints (dict): Slot-value mapping of constraints.
-                                If empty, all entities in the database will be returned.
-            requested_slots (Iterable): list of slots that should be returned in addition to the
-                                        system requestable slots and the primary key
-        """
-        if self.has_enough_constraints_to_query(constraints):
-
-            #TODO: Handle case when no movies are found   
-            years = self._get_requested_years(constraints) 
-            if 'with_actors' in constraints:
-                if 'with_genres' in constraints:
-                    suggestions = self._query(constraints['with_genres'], years, constraints['with_actors'])
-                else:
-                    suggestions = self._query(None, years, constraints['with_actors'])
-            else:
-                if 'with_genres' in constraints:
-                    suggestions = self._query(constraints['with_genres'], years, None)
-                else:
-                    suggestions = None
-            
-            #suggestion = choice(suggestions)
-            if suggestions is None:
-                return []
-
-            output = []
-
-            #if random:
-                #suggestions = list(choice(suggestions))
-
-            for suggestion in suggestions:
-                title = suggestion['original_title']
-                overview = suggestion['overview']
-                tmdb_id = suggestion['id']
-                rating = suggestion['vote_average']
-                release_year = self._get_year_from_date(suggestion['release_date'])
-
-                result_dict = {
-                    'artificial_id': str(len(self.last_results)),
-                    'original_id' : tmdb_id,
-                    'title': title,
-                    'overview': overview,
-                    'primary_release_year': release_year,
-                    #'with_genres': constraints['with_genres'],
-                    #'with_actors': constraints['with_actors'],
-                    'rating':rating
-                }
-
-                if 'with_genres' in constraints:
-                    result_dict['with_genres'] = constraints['with_genres']
-                if 'with_actors' in constraints:
-                    result_dict['with_actors'] = constraints['with_actors']
-
-                if any(True for _ in requested_slots):
-                    cleaned_result_dict = {slot: result_dict[slot] for slot in requested_slots}
-                else:
-                    cleaned_result_dict = result_dict
-            #self.last_results.append(cleaned_result_dict)
-                self.last_results.append(result_dict)
-
-                output.append(cleaned_result_dict)
-            return output
-        else:
-            return []
-
-    def find_info_about_entity(self, entity_id, requested_slots: Iterable):
-        """ Returns the values (stored in the data backend) of the specified slots for the
-            specified entity.
-
-        Args:
-            entity_id (str): primary key value of the entity
-            requested_slots (dict): slot-value mapping of constraints
-        """
-        tmdb_id = self.last_results[int(entity_id)]['original_id']
-        output = self.last_results[int(entity_id)]
-        if 'credits' in requested_slots:
-            full_cast = tmdb.Movies(id=tmdb_id).credits()['cast']
-            #for i in range(1):
-                #some_cast.append(cast[i]['name'])
-            some_cast = full_cast[1]['name']
-        #return [{'credits':some_cast}]
-            output['credits'] = some_cast
-        #print(output)
-        return [output]
-
     def get_requestable_slots(self) -> List[str]:
         """ Returns a list of all slots requestable by the user. What the system tells the user. """
         return ['title', 'overview']
 
     def get_system_requestable_slots(self) -> List[str]:
-        """ Returns a list of all slots requestable by the system. What the system can ask the user. """
-        return ['with_genres', 'primary_release_year', 'with_actors']
+        """ Returns a list of all slots requestable by the system. What the system can ask the user.
+            The system will ask in the order that they are given here
+         """
+        return ['genres', 'cast', 'release_year']
 
     def get_informable_slots(self) -> List[str]:
         """ Returns a list of all informable slots. What user tells the system."""
@@ -153,7 +67,6 @@ class MovieDomain(LookupDomain):
 
     def get_mandatory_slots(self) -> List[str]:
         """ Returns a list of all mandatory slots. """
-        #return ['with_genres', 'primary_release_year', 'with_actors']
         return []
         
     def get_default_inform_slots(self) -> List[str]:
@@ -177,45 +90,60 @@ class MovieDomain(LookupDomain):
         """ Returns the slot name that will be used as the 'name' of an entry """
         return 'artificial_id'
 
-
-    def _query(self, with_genres, primary_release_year, with_actors):
-
-        if with_genres == None:
+    def query(self, constraints):
+        #TODO: handle multiple cast members
+        if 'cast' in constraints:
             try:
-                person = tmdb.Search().person(query = with_actors)['results'][0]['id']
-            except:
-                return None
-            output = tmdb.Discover().movie(primary_release_year=primary_release_year, with_cast=[person])
+                person = tmdb.Search().person(query = constraints['cast'])['results'][0]
+            except Exception as e:
+                print("EXCEPTION while querying for person: ", e)
+                person = None
+        else:
+            person = None
 
-        elif with_actors == None:
-            output = tmdb.Discover().movie(with_genres=genre2id[with_genres], primary_release_year=primary_release_year)
+        #TODO: make use of all genres that are passed, not just one
+        genre = list(constraints['genres'].keys())[0] if 'genres' in constraints else None
+        genre_id = genre2id[genre] if genre else None
+        year = constraints['release_year'] if 'release_year' in constraints else None
+
+        if person is None and genre is None and year is None:
+            return []
         else:
             try:
-                person = tmdb.Search().person(query = with_actors)['results'][0]['id']
-            except:
-                return None
-            output = tmdb.Discover().movie(with_genres=genre2id[with_genres], primary_release_year=primary_release_year, with_cast=[person])
+                person_id = [person['id']] if person else None
+                api_result = tmdb.Discover().movie(with_genres=genre_id, primary_release_year=year, with_cast=person_id)
+                return self._canonicalize_api_result(api_result, person)
+            except Exception as e:
+                print("EXCEPTION while querying API: ", e)
+                return []
 
-        return output['results']
-
-
-    def has_enough_constraints_to_query(self, constraints):
-        #return 'with_genres' in constraints \
-            #and ('primary_release_year' in constraints or 'release_decade' in constraints) \
-            #and 'with_actors' in constraints 
-        return ('with_genres' in constraints or 'with_actors' in constraints) \
-            and ('primary_release_year' in constraints or 'release_decade' in constraints)
-
-
-    def _get_requested_years(self, constraints):
-        if 'primary_release_year' in constraints:
-            return constraints['primary_release_year']
-        elif 'release_decade' in constraints:
-            decade = constraints['release_decade']
-            return [decade[0:3] + str(n) for n in range(10)]
+    def _canonicalize_api_result(self, api_response, person):
+        """ 
+        Takes the fieds from the api result that we care about and renames them
+        to make them consistent across the code. 
         
-    def _get_year_from_date(self, date_str):
-        return datetime.strptime(date_str, '%Y-%m-%d').year
+        Past this point, we don't care about what the api calls different fields.
+        """
+        results = api_response['results']
+        canonicalized_results = []
+        for movie in results:
+            canonicalized_movie = {}
+            if 'id' in movie:
+                canonicalized_movie['id'] = str(movie['id'])
+            if 'title' in movie:
+                canonicalized_movie['title'] = movie['original_title']
+            if 'overview' in movie:
+                canonicalized_movie['overview'] = movie['overview']
+            if 'release_date' in movie:
+                canonicalized_movie['release_year'] = movie['release_date'][:4]
+            if 'genre_ids' in movie:
+                canonicalized_movie['genres'] = [id2genre[genre_id] for genre_id in movie['genre_ids']]
+            if person is not None and 'name' in person:
+                canonicalized_movie['cast'] = person['name']
+            if 'vote_average' in movie:
+                canonicalized_movie['rating'] = str(movie['vote_average'])
+            canonicalized_results.append(canonicalized_movie)
+        return canonicalized_results
 
     def get_keyword(self):
         return 'movie'

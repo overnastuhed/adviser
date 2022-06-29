@@ -33,7 +33,7 @@ class UserActionType(Enum):
     Thanks = 'thanks'
     Affirm = 'affirm'
     Deny = 'deny'
-    RequestRandom = 'reqrand'
+    RequestRecommendation = 'reqrecommend'
     RequestAlternatives = 'reqalts'
     Ack = 'ack'
     Bad = 'bad'

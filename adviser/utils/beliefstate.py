@@ -39,6 +39,11 @@ class BeliefState:
     def __init__(self, domain: JSONLookupDomain):
         self.domain = domain
         self._history = [self._init_beliefstate()]
+
+    def is_first_turn(self):
+        return len(self._history) == 2 
+        # 2 because initializing adds an empty state to the history, 
+        # then when the dialog starts start_new_turn() is called, which adds another state on top of it
     
     def dialog_start(self):
         self._history = [self._init_beliefstate()]

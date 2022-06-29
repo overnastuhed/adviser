@@ -89,7 +89,7 @@ class MovieNLU(Service):
             matches = re.finditer(regex, user_utterance)
             actor_index = 0
             for match in matches:
-                user_acts.append(UserAct(user_utterance, UserActionType.Inform, 'with_actors', actors[actor_index]))
+                user_acts.append(UserAct(user_utterance, UserActionType.Inform, 'cast', actors[actor_index]))
                 actor_index += 1
 
         for thank in ('thanks', 'thankyou'):
@@ -99,12 +99,12 @@ class MovieNLU(Service):
         for regex in MOVIE_CAST_REQUEST_REGEX:
             match = regex.search(user_utterance)
             if match:
-                user_acts.append(UserAct(user_utterance, UserActionType.Request, 'credits'))
+                user_acts.append(UserAct(user_utterance, UserActionType.Request, 'cast'))
         
         for regex in SHOW_RANDOM:
             match = regex.search(user_utterance)
             if match:
-                user_acts.append(UserAct(user_utterance, UserActionType.RequestRandom))
+                user_acts.append(UserAct(user_utterance, UserActionType.RequestRecommendation))
         
         for regex in SHOW_ANOTHER:
             match = regex.search(user_utterance)
@@ -121,7 +121,7 @@ class MovieNLU(Service):
             if match:
                 genre = match.group(0)
                 normalized_genre = genre_synonyms.MAPPING[genre]
-                user_acts.append(UserAct(user_utterance, UserActionType.Inform, 'with_genres', normalized_genre))
+                user_acts.append(UserAct(user_utterance, UserActionType.Inform, 'genres', normalized_genre))
 
         for regex in MOVIE_RELEASE_DATE_REGEXES:
             match = regex.search(user_utterance)
@@ -129,8 +129,9 @@ class MovieNLU(Service):
                 year = match.group(1)
                 if len(year) == 2:
                     year = '19' + year
-                user_acts.append(UserAct(user_utterance, UserActionType.Inform, 'primary_release_year', year))
+                user_acts.append(UserAct(user_utterance, UserActionType.Inform, 'release_year', year))
 
+        #TODO: Make sure this still works
         for regex in MOVIE_RELEASE_DECADE_REGEXES:
             match = regex.search(user_utterance)
             if match:

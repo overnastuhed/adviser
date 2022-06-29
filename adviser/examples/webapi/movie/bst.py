@@ -1,10 +1,13 @@
 from typing import List, Set
+from utils.sysact import SysAct, SysActionType
 
 from services.service import PublishSubscribe
 from services.service import Service
 from utils.beliefstate import BeliefState
 from utils.useract import UserActionType, UserAct
 
+from enum import Enum
+    
 
 class MovieBST(Service):
     """
@@ -16,8 +19,16 @@ class MovieBST(Service):
         self.logger = logger
         self.bs = BeliefState(domain)
 
+    @PublishSubscribe(sub_topics=["sys_act"])
+    def update_bst_from_system_actions(self, sys_act: SysAct):
+        self.bs['sys_act'] = sys_act
+        #TODO: I don't know if we care about these values... possibly can just remove them
+        #self.bs["num_matches"] = num_entries
+        #self.bs["discriminable"] = 
+
+
     @PublishSubscribe(sub_topics=["user_acts"], pub_topics=["beliefstate"])
-    def update_bst(self, user_acts: List[UserAct] = None) \
+    def update_bst_from_user_actions(self, user_acts: List[UserAct] = None) \
             -> dict(beliefstate=BeliefState):
         """
             Updates the current dialog belief state (which tracks the system's
@@ -51,10 +62,6 @@ class MovieBST(Service):
                 self.bs["user_acts"] = self._get_all_usr_action_types(user_acts)
 
                 self._handle_user_acts(user_acts)
-
-                num_entries, discriminable = self.bs.get_num_dbmatches()
-                self.bs["num_matches"] = num_entries
-                self.bs["discriminable"] = discriminable
 
         return {'beliefstate': self.bs}
 

@@ -52,11 +52,11 @@ class MovieNLG(Service):
             return {'sys_utterance': 'Thank you, good bye'}
         elif sys_act.type == SysActionType.Request:
             slot = list(sys_act.slot_values.keys())[0]
-            if slot == 'primary_release_year':
+            if slot == 'release_year':
                 return {'sys_utterance': 'For which year are you looking for a movie?'}
-            elif slot == 'with_genres':
+            elif slot == 'genres':
                 return {'sys_utterance': 'Which genre are you interested in?'}
-            elif slot == 'with_actors':
+            elif slot == 'cast':
                 return {'sys_utterance': 'What actors are you interested in?'}
             else:
                 # This should probably be changed
@@ -67,19 +67,16 @@ class MovieNLG(Service):
             return {'sys_utterance': f'I have found several movies fitting you query. Do you want me to show a random movie? Otherwise, you can additionally specify the following features: {f_srt}.'}
         elif sys_act.type == SysActionType.RequestMore:
             return {'sys_utterance': 'Do you want to look for another movie?'}
-       # elif sys_act.type == SysActionType.InformByName:
-       #     title = sys_act.slot_values['title'][0]
-       #     cast =  sys_act.slot_values['credits'][0]
-       #     return {'sys_utterance': f'{cast} was in movie {title}.'}
-       # else:
-       #     with_genres = sys_act.slot_values['with_genres'][0]
-       #     primary_release_year = sys_act.slot_values['primary_release_year'][0]
-       #     title = sys_act.slot_values['title'][0]
-       #     overview = sys_act.slot_values['overview'][0]
-       #     return {'sys_utterance': f'A {with_genres} movie released in {primary_release_year} is called {title}: {overview}.'}
-        if sys_act.type == SysActionType.ShowRandom:
+        elif sys_act.type == SysActionType.ShowRecommendation:
             str_output = self.debug_output(sys_act)
             return {'sys_utterance': "I've found several movies fitting the query, but no further selection is possible. Showing a random one:\n" + str_output}
+        elif sys_act.type == SysActionType.InformByAlternatives:
+            #TODO: Handle user responding to this kind of message
+            message = "I've found several movies. Which one do you want to know more about?"
+            counter = 1
+            for title in sys_act.slot_values['titles']:
+                message += "\n" + f"{counter}) '{title}'" 
+            return {'sys_utterance': message}
         else:          
             #output = self.debug_output(sys_act)
             output = InformTemplates(sys_act.slot_values).generate()
@@ -89,11 +86,11 @@ class MovieNLG(Service):
     def debug_output(self, sys_act):
         output = dict()
         try:
-            output['with_genres'] = sys_act.slot_values['with_genres'][0]
+            output['genres'] = sys_act.slot_values['genres'][0]
         except:
             pass
         try:
-            output['primary_release_year'] = sys_act.slot_values['primary_release_year'][0]
+            output['release_year'] = sys_act.slot_values['release_year'][0]
         except:
             pass
         try:
@@ -101,11 +98,7 @@ class MovieNLG(Service):
         except:
             pass
         try:
-            output['cast'] = sys_act.slot_values['with_actors'][0]
-        except:
-            pass
-        try:
-            output['cast'] = sys_act.slot_values['credits'][0]
+            output['cast'] = sys_act.slot_values['cast'][0]
         except:
             pass
         try:
@@ -113,7 +106,7 @@ class MovieNLG(Service):
         except:
             pass
         try:
-            output['rating'] = sys_act.slot_values['vote_average'][0]
+            output['rating'] = sys_act.slot_values['rating'][0]
         except:
             pass
         str_output = ""
@@ -129,15 +122,17 @@ class InformTemplates():
     def _pick_template(self):
         if "rating" in self.slot_values:
             return "The {genre} {title} {released_in} {release_year} {starring} {actors} is rated {rating}."
-        elif "primary_release_year" in self.slot_values:
+        elif "release_year" in self.slot_values:
             return "The {genre} {title} {starring} {actors} was released in {release_year}."
-        elif "with_actors" in self.slot_values or "credits" in self.slot_values:
+        elif "cast" in self.slot_values:
             return "The {genre} {title} stars {actors}."
-        elif "with_genres" in self.slot_values:
+        elif "genres" in self.slot_values:
             return "{title} is {a_or_an_genre}."
-        else:
+        elif "title" in self.slot_values:
             return "I found the movie {title}. What do you want to know about it?"
-
+        else:
+            return "MISSING TMEPLATE! Passed slot values: " + ' '.join(list(self.slot_values.keys()))
+            
     def generate(self):
         template = self._pick_template()
         template = template.replace('{genre}', self._genre()) \
@@ -167,9 +162,7 @@ class InformTemplates():
         return  f"{determiner} {text}"
 
     def _actors(self):
-        actors = self._get_slot_value('with_actors')
-        if not actors:
-            actors = self._get_slot_value('credits')
+        actors = self._get_slot_value('cast')
         if actors:
             if len(actors) == 1:
                 return f"{actors[0]}" 
@@ -179,7 +172,7 @@ class InformTemplates():
             return ""
 
     def _genre(self):
-        genres = self._get_slot_value('with_genres')
+        genres = self._get_slot_value('genres')
         if genres:
             return f"{' '.join(genres)} movie"
         else:
@@ -193,16 +186,14 @@ class InformTemplates():
             return ""
 
     def _release_year(self):
-        release_year = self._get_slot_value('primary_release_year')
+        release_year = self._get_slot_value('release_year')
         if release_year:
             return f"{release_year[0]}"
         else:
             return ""
 
     def _rating(self):
-        rating = self._get_slot_value('vote_average')
-        if not rating:
-            rating = self._get_slot_value('rating')
+        rating = self._get_slot_value('rating')
         if rating:
             return f"{rating[0]}"
         else:
