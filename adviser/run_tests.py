@@ -1,4 +1,5 @@
 import argparse
+import traceback
 
 def load_movie_nlu_tests():
     from examples.webapi.movie import MovieNLU, MovieDomain, get_nlu_tests
@@ -32,6 +33,7 @@ def run_nlu_tests(nlu, tests):
             print('Input: ', input)
             print('Failed with exception: ')
             print(e)
+            print(traceback.format_exc())
             print('-------------------------------------------')
             continue
 
@@ -69,6 +71,7 @@ def run_nlg_tests(nlg, tests):
             print('Input: ', input)
             print('Failed with exception: ')
             print(e)
+            print(traceback.format_exc())
             print('-------------------------------------------')
             continue
 
@@ -85,12 +88,23 @@ def run_nlg_tests(nlg, tests):
     print(f'{successful_test_count}/{len(tests)} NLG TESTS SUCCESSFUL')
 
 def compare_system_acts(a, b):
+    if a is None or b is None:
+        return False
     if a.type != b.type:
         return False
     if len(a.slot_values) != len(b.slot_values):
         return False
     for slot in a.slot_values.keys():
-        if a.slot_values[slot] != b.slot_values[slot] and a.slot_values[slot] != ['*'] and b.slot_values[slot] != ['*']:
+        if slot not in b.slot_values:
+            return False
+        a_value = a.slot_values[slot]
+        b_value = b.slot_values[slot]
+
+        if len(a_value) > 1 or len(b_value) > 1:
+            for b_val in b_value:
+                if b_val not in a_value and "*" not in a_value:
+                    return False
+        elif a_value != b_value and a_value != ['*'] and b_value != ['*']:
             return False
     return True
 
@@ -107,6 +121,7 @@ def run_policy_tests(policy, tests):
             print('Input: ', input)
             print('Failed with exception: ')
             print(e)
+            print(traceback.format_exc())
             print('-------------------------------------------')
             continue
 
