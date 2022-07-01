@@ -86,7 +86,15 @@ class MoviePolicy(Service):
         question = self._get_question_asked_by_system(beliefstate)
         if question is None:
             return
-        elif question == "looking_for_specific_movie":
+
+        elif question == 'do_you_want_to_look_for_another_movie':
+            if answer == UserActionType.Deny:
+                return SystemResponses.bye()
+            elif answer == UserActionType.Affirm and len(beliefstate['user_acts']) == 1:
+                #TODO: ask user what they want to do, give a hint as to what can be done
+                return SystemResponses.welcome()
+            
+        elif question == 'looking_for_specific_movie':
             if answer == UserActionType.Deny:
                 beliefstate["informs"]['looking_for_specific_movie'] = {False: 1}
             elif answer == UserActionType.Affirm:
@@ -122,7 +130,7 @@ class MoviePolicy(Service):
 
         for result in results:
             if result['id'] not in movies_already_shown_to_user:
-                return SystemResponses.tell_user_about_movie(result)
+                return SystemResponses.suggest_movie(result)
         return SystemResponses.nothing_found()
 
     def _user_is_asking_for_a_recommendation(self, beliefstate):
@@ -132,7 +140,7 @@ class MoviePolicy(Service):
             return SystemResponses.nothing_found()
         else:
             recommendation = results[0]
-            return SystemResponses.recommend_movie(recommendation)
+            return SystemResponses.suggest_movie(recommendation)
 
     def _user_is_looking_for_a_specific_movie(self, beliefstate):
         constraints = self._get_constraints(beliefstate)
@@ -186,5 +194,7 @@ class MoviePolicy(Service):
         sys_act = turn['sys_act']
         if sys_act.type == SysActionType.Confirm:
             return sys_act.slot_values['confirm'][0]
-                
+        elif sys_act.type == SysActionType.RequestMore:
+            return "do_you_want_to_look_for_another_movie"
+
         return None
