@@ -77,11 +77,14 @@ class MovieNLG(Service):
             for title in sys_act.slot_values['titles']:
                 message += "\n" + f"{counter}) '{title}'" 
             return {'sys_utterance': message}
-        else:          
+        elif sys_act.type == SysActionType.NothingFound:
+            return {'sys_utterance': 'I could not find any movies fitting your query.'}
+        elif sys_act.type == SysActionType.InformByName:          
             #output = self.debug_output(sys_act)
             output = InformTemplates(sys_act.slot_values).generate()
-
             return {'sys_utterance': output}
+        else:
+            raise NotImplementedError(f'NLG for {sys_act.type} not implemented')
 
     def debug_output(self, sys_act):
         output = dict()
@@ -131,7 +134,7 @@ class InformTemplates():
         elif "title" in self.slot_values:
             return "I found the movie {title}. What do you want to know about it?"
         else:
-            return "MISSING TMEPLATE! Passed slot values: " + ' '.join(list(self.slot_values.keys()))
+            return "MISSING TEMPLATE! Passed slot values: " + ' '.join(list(self.slot_values.keys()))
             
     def generate(self):
         template = self._pick_template()

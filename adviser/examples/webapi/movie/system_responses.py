@@ -38,25 +38,24 @@ class SystemResponses:
 
     def recommend_movie(movie):
         sys_act = SysAct(SysActionType.ShowRecommendation)
-        sys_act.add_value('id', movie['id'])
-        sys_act.add_value('title', movie['title'])
-        sys_act.add_value('overview', movie['overview'])
-        sys_act.add_value('release_year', movie['release_year'])
-        for genre in movie['genres']:
-            sys_act.add_value('genres', genre)
-        sys_act.add_value('cast', movie['cast'])
-        sys_act.add_value('rating', movie['rating'])
+        _add_values_to_sys_act(sys_act, movie)
         return sys_act
 
     def tell_user_about_movie(movie):
         #TODO: Smarter way to select which fields to tell to the user.
         sys_act = SysAct(SysActionType.InformByName)
-        sys_act.add_value('id', movie['id'])
-        sys_act.add_value('title', movie['title'])
-        sys_act.add_value('overview', movie['overview'])
-        sys_act.add_value('release_year', movie['release_year'])
-        for genre in movie['genres']:
-            sys_act.add_value('genres', genre)
-        sys_act.add_value('cast', movie['cast'])
-        sys_act.add_value('rating', movie['rating'])
+        _add_values_to_sys_act(sys_act, movie)
         return sys_act
+
+
+
+def _add_values_to_sys_act(sys_act, movie, slots=None):
+    if slots is None:
+        slots = ['id', 'title', 'overview', 'release_year', 'genres', 'cast', 'rating']
+    for slot in slots:
+        if slot in movie:
+            if type(movie[slot]) == list:
+                for value in movie[slot]:
+                    sys_act.add_value(slot, value)
+            else: 
+                sys_act.add_value(slot, movie[slot])
