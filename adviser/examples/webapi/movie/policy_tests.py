@@ -2,6 +2,9 @@ from utils.sysact import SysActionType
 from .test_utils import SysActFactory, BeliefStateFactory
 
 def get_policy_tests():
+    return get_general_tests() + get_question_answering_tests()
+
+def get_general_tests():
     return [
         {
             'input': BeliefStateFactory().build(), 
@@ -59,7 +62,7 @@ def get_policy_tests():
             'input': BeliefStateFactory()
                         .inform('genres', 'action')
                         .inform('cast', 'Tom Cruise') 
-                        .request_recommendation()               
+                        .inform('looking_for_specific_movie', False)
                         .build(), 
             'expected_output': {
                 'sys_act': SysActFactory(SysActionType.ShowRecommendation)
@@ -128,6 +131,56 @@ def get_policy_tests():
                         .build(), 
             'expected_output': {
                 'sys_act': SysActFactory(SysActionType.Bye)
+                            .build()
+            }
+        }
+    ]
+
+def get_question_answering_tests():
+    return [
+        {
+            'input': BeliefStateFactory()
+                        .inform('genres', 'comedy')                         # User is asking for a comedy
+                        .build(), 
+            'expected_output': {
+                'sys_act': SysActFactory(SysActionType.Confirm)             # System confirming that they're looking for a suggestion, not a specific movie
+                            .confirm('looking_for_specific_movie')
+                            .genre('comedy')    
+                            .build()
+            }
+        },
+        {
+            'input': BeliefStateFactory()
+                        .inform('genres', 'comedy')                         # User is asking for a comedy
+                        .new_turn(SysActFactory(SysActionType.Confirm)      # System confirming that they're looking for a specific movie, not a suggestion
+                            .confirm('looking_for_specific_movie')
+                            .genre('comedy')    
+                            .build())
+                        .deny()                                             # User answering negatively
+                        .build(), 
+            'expected_output': {
+                'sys_act': SysActFactory(SysActionType.ShowRecommendation)  # System suggesting a comedy movie
+                            .id(any=True)
+                            .title(any=True)
+                            .overview(any=True)
+                            .year(any=True)
+                            .rating(any=True)
+                            .genre(containing='comedy')    
+                            .build()
+            }
+        },
+        {
+            'input': BeliefStateFactory()
+                        .inform('genres', 'comedy')                         # User is asking for a comedy
+                        .new_turn(SysActFactory(SysActionType.Confirm)      # System confirming that they're looking for a specific movie, not a suggestion
+                            .confirm('looking_for_specific_movie')
+                            .genre('comedy')    
+                            .build())
+                        .affirm()                                           # User answering affirmatively
+                        .build(), 
+            'expected_output': {
+                'sys_act': SysActFactory(SysActionType.Request)             # System asking the user to fill another slot, as just one is not enough to find a specific movie
+                            .actor()
                             .build()
             }
         }

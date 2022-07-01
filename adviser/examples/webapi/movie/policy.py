@@ -62,14 +62,37 @@ class MoviePolicy(Service):
         """
         user_actions = beliefstate["user_acts"]  
 
+        sys_act = None
+        if UserActionType.Affirm in user_actions:
+            sys_act = self._user_is_answering_question(beliefstate, UserActionType.Affirm)
+        if UserActionType.Deny in user_actions:
+            sys_act = self._user_is_answering_question(beliefstate, UserActionType.Deny)
+
+        if sys_act is not None:
+            return sys_act
+        
+        user_informs = beliefstate["informs"]
+
         if UserActionType.Request in user_actions:
             return self._user_is_requesting_a_field(beliefstate)
         elif UserActionType.RequestAlternatives in user_actions:
             return self._user_is_asking_for_alternative(beliefstate)
-        elif UserActionType.RequestRecommendation in user_actions:
+        elif 'looking_for_specific_movie' in user_informs and False in user_informs['looking_for_specific_movie']:
             return self._user_is_asking_for_a_recommendation(beliefstate)
         else: 
             return self._user_is_looking_for_a_specific_movie(beliefstate)
+
+    def _user_is_answering_question(self, beliefstate, answer):
+        question = self._get_question_asked_by_system(beliefstate)
+        if question is None:
+            return
+        elif question == "looking_for_specific_movie":
+            if answer == UserActionType.Deny:
+                beliefstate["informs"]['looking_for_specific_movie'] = {False: 1}
+            elif answer == UserActionType.Affirm:
+                beliefstate["informs"]['looking_for_specific_movie'] = {True: 1}
+            else:
+                return SystemResponses.bad()
 
     def _user_is_requesting_a_field(self, beliefstate):
         constraints = self._get_constraints(beliefstate)
@@ -121,6 +144,8 @@ class MoviePolicy(Service):
         elif len(results) <= 3:
             return SystemResponses.ask_user_to_pick_from_multiple_results(results)
         else:
+            if len(constraints) <= 1:
+                return SystemResponses.ask_if_user_is_looking_for_a_recommendation(constraints)
             slot = self._get_open_slot(beliefstate)
             if slot:
                 return SystemResponses.ask_user_to_inform_about_a_slot(slot)
@@ -152,3 +177,14 @@ class MoviePolicy(Service):
                 shown_movie_ids.append(sys_act.slot_values['id'][0])
                 
         return shown_movie_ids
+
+    def _get_question_asked_by_system(self, beliefstate):
+        turn = beliefstate._history[-2]
+        if 'sys_act' not in turn:
+            return None
+
+        sys_act = turn['sys_act']
+        if sys_act.type == SysActionType.Confirm:
+            return sys_act.slot_values['confirm'][0]
+                
+        return None

@@ -47,7 +47,14 @@ class SystemResponses:
         _add_values_to_sys_act(sys_act, movie)
         return sys_act
 
-
+    def ask_if_user_is_looking_for_a_recommendation(constraints):
+        sys_act = SysAct(SysActionType.Confirm)
+        sys_act.add_value('confirm', 'looking_for_specific_movie')
+        for slot in constraints:
+            values = list(constraints[slot].keys())
+            for val in values:
+                sys_act.add_value(slot, val)
+        return sys_act
 
 def _add_values_to_sys_act(sys_act, movie, slots=None):
     if slots is None:

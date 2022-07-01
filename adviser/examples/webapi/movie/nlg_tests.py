@@ -48,5 +48,12 @@ def get_nlg_tests():
                         .genre('comedy')
                         .build(), 
             'expected_output': {'sys_utterance': "The Hangover is a comedy movie."}
+        },
+        {
+            'input': SysActFactory(SysActionType.Confirm)
+                        .confirm('looking_for_specific_movie')
+                        .genre('comedy')
+                        .build(), 
+            'expected_output': {'sys_utterance': "Are you looking for a specific comedy movie?"}
         }
     ]

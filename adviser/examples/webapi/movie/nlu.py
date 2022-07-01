@@ -105,7 +105,7 @@ class MovieNLU(Service):
         for regex in SHOW_RECOMMENDATION:
             match = regex.search(user_utterance)
             if match:
-                user_acts.append(UserAct(user_utterance, UserActionType.RequestRecommendation))
+                user_acts.append(UserAct(user_utterance, UserActionType.Inform, 'looking_for_specific_movie', False))
         
         for regex in SHOW_ANOTHER:
             match = regex.search(user_utterance)

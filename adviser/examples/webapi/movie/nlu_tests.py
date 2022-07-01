@@ -43,7 +43,8 @@ def get_genre_tests():
         },
         {
             'input': 'Recommend me an animated movie from 2020.', 
-            'expected_output': [ UserAct("", UserActionType.Inform, 'genres', "animation"),
+            'expected_output': [ UserAct("", UserActionType.Inform, 'looking_for_specific_movie', False),
+                                UserAct("", UserActionType.Inform, 'genres', "animation"),
                                 UserAct("", UserActionType.Inform, 'release_year', "2020")  ]
         }
     ]
@@ -51,12 +52,12 @@ def get_genre_tests():
 def get_year_tests():
     return [
         {
-            'input': 'Suggest me an action movie in 2020', 
+            'input': 'Give me an action movie in 2020', 
             'expected_output': [ UserAct("", UserActionType.Inform, 'genres', "action"), 
                                 UserAct("", UserActionType.Inform, 'release_year', "2020")  ]
         },
         {
-            'input': 'Suggest me a comedy released in 1998', 
+            'input': 'Give me a comedy released in 1998', 
             'expected_output': [ UserAct("", UserActionType.Inform, 'genres', "comedy"), 
                                 UserAct("", UserActionType.Inform, 'release_year', "1998")  ]
         },
@@ -100,7 +101,9 @@ def get_recommendation_tests():
     return [
         {
             'input': 'Hi! Recommend me an action movie from 1990', 
-            'expected_output': [ UserAct("", UserActionType.Inform, 'genres', "action"),
-                                UserAct("", UserActionType.Inform, 'release_year', "1990")]
+            'expected_output': [ UserAct("", UserActionType.Hello),
+                                UserAct("", UserActionType.Inform, 'genres', "action"),
+                                UserAct("", UserActionType.Inform, 'release_year', "1990"),
+                                UserAct("", UserActionType.Inform, 'looking_for_specific_movie', False)]
         }
     ]        

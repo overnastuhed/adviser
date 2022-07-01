@@ -44,7 +44,7 @@ def run_nlu_tests(nlu, tests):
             else:
                 missing_acts.append(act)
 
-        if len(missing_acts) > 0:
+        if len(missing_acts) > 0 or len(output) > 0:
             print('---------------FAILED TEST-----------------')
             print('Input: ', input)
             if len(missing_acts) > 0:

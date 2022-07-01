@@ -83,6 +83,20 @@ class MovieNLG(Service):
             #output = self.debug_output(sys_act)
             output = InformTemplates(sys_act.slot_values).generate()
             return {'sys_utterance': output}
+        elif sys_act.type == SysActionType.Confirm:
+            if 'confirm' not in sys_act.slot_values:
+                output = "Are you sure?"
+            else:
+                if sys_act.slot_values['confirm'] == ['looking_for_specific_movie']:
+                    if 'genres' in sys_act.slot_values:
+                        genres = ' '.join(sys_act.slot_values['genres'])
+                        output = f"Are you looking for a specific {genres} movie?"
+                    else:
+                        output = "Are you looking for a specific movie?"
+                else:
+                    output = "MISSING TEMPLATE FOR CONFIRM! Passed slot values: " + ' '.join(list(sys_act.slot_values.keys()))
+            return {'sys_utterance': output}
+
         else:
             raise NotImplementedError(f'NLG for {sys_act.type} not implemented')
 
@@ -134,7 +148,7 @@ class InformTemplates():
         elif "title" in self.slot_values:
             return "I found the movie {title}. What do you want to know about it?"
         else:
-            return "MISSING TEMPLATE! Passed slot values: " + ' '.join(list(self.slot_values.keys()))
+            return "MISSING TEMPLATE FOR INFORM! Passed slot values: " + ' '.join(list(self.slot_values.keys()))
             
     def generate(self):
         template = self._pick_template()

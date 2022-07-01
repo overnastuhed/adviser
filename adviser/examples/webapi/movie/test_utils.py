@@ -17,6 +17,8 @@ class SysActFactory():
 
     def genre(self, text=None, any=False, containing=None):
         if containing:
+            if not type(containing) == list:
+                containing = [containing]
             for genre in containing:
                 self.sysact.add_value("genres", genre)
             self.sysact.add_value("genres", '*')
@@ -38,6 +40,10 @@ class SysActFactory():
 
     def rating(self, text=None, any=False):
         self.sysact.add_value("rating", text if not any else '*')
+        return self
+
+    def confirm(self, question):
+        self.sysact.add_value('confirm', question)
         return self
 
     def build(self):
@@ -63,10 +69,13 @@ class BeliefStateFactory():
         self.bs['user_acts'].add(UserActionType.RequestAlternatives)
         return self
 
-    def request_recommendation(self):
-        self.bs['user_acts'].add(UserActionType.RequestRecommendation)
+    def affirm(self):
+        self.bs['user_acts'].add(UserActionType.Affirm)
         return self
 
+    def deny(self):
+        self.bs['user_acts'].add(UserActionType.Deny)
+        return self
 
     def bye(self):
         self.bs['user_acts'].add(UserActionType.Bye)
