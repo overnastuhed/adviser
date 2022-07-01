@@ -71,11 +71,13 @@ class MovieNLG(Service):
             str_output = self.debug_output(sys_act)
             return {'sys_utterance': "I've found several movies fitting the query, but no further selection is possible. Showing a random one:\n" + str_output}
         elif sys_act.type == SysActionType.InformByAlternatives:
-            #TODO: Handle user responding to this kind of message
-            message = "I've found several movies. Which one do you want to know more about?"
             counter = 1
-            for title in sys_act.slot_values['titles']:
-                message += "\n" + f"{counter}) '{title}'" 
+            movie_titles = ""
+            for title in sys_act.slot_values['title']:
+                movie_titles += "\n" + f"{counter}) '{title}'" 
+                counter += 1
+            message = f"I've found {counter-1} movies. Which one do you want to know more about? {movie_titles}"
+
             return {'sys_utterance': message}
         elif sys_act.type == SysActionType.NothingFound:
             return {'sys_utterance': 'I could not find any movies fitting your query.'}

@@ -24,7 +24,12 @@ def run_nlu_tests(nlu, tests):
     successful_test_count = 0
     for test in tests:
         input = test['input']
-        output = nlu.extract_user_acts(input)['user_acts']
+        
+        if type(input) is tuple:
+            nlu.save_last_sys_act(sys_act=input[1])
+            output = nlu.extract_user_acts(user_utterance=input[0])['user_acts']
+        else:
+            output = nlu.extract_user_acts(input)['user_acts']
 
         try:
             expected_output = test['expected_output']

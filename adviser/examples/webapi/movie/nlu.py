@@ -19,6 +19,7 @@
 
 import re, json, os
 from typing import List
+from utils.sysact import SysAct, SysActionType
 
 from utils import UserAct, UserActionType, DiasysLogger
 from services.service import Service, PublishSubscribe
@@ -53,6 +54,21 @@ SHOW_RECOMMENDATION = [
     re.compile(r'\b(recommend|recommendation|suggest|suggestion)\b')
 ]
 
+FIRST_REGEXES = [
+    re.compile(r'\b(first|1st|1|^one$)\b'),
+]
+
+SECOND_REGEX = [
+    re.compile(r'\b(second|2nd|2|two)\b'),
+]
+
+THIRD_REGEX = [
+    re.compile(r'\b(third|3rd|3|three)\b'),
+]
+
+LAST_REGEX = [
+    re.compile(r'\b(last)\b'),
+]
 class MovieNLU(Service):
     """Very simple NLU for the movie domain."""
 
@@ -62,9 +78,14 @@ class MovieNLU(Service):
         super(MovieNLU, self).__init__(domain, debug_logger=logger)
         path = os.path.join('adviser', 'resources', 'nlu_regexes', 'GeneralRules.json')
         self.general_regex = json.load(open(path))
+        self.last_sys_act = None
+
+    @PublishSubscribe(sub_topics=["sys_act"])
+    def save_last_sys_act(self, sys_act: SysAct = None):
+        self.last_sys_act = sys_act
 
     @PublishSubscribe(sub_topics=["user_utterance"], pub_topics=["user_acts"])
-    def extract_user_acts(self, user_utterance: str = None) -> dict(user_acts=List[UserAct]):
+    def extract_user_acts(self, user_utterance: str = None, sys_act: SysAct = None) -> dict(user_acts=List[UserAct]):
         """Main function for detecting and publishing user acts.
 
         Args:
@@ -80,6 +101,11 @@ class MovieNLU(Service):
         user_utterance, actors = self.actor_name_extractor(user_utterance)
 
         user_utterance = ' '.join(user_utterance.lower().split())
+
+        if self.last_sys_act is not None and self.last_sys_act.type == SysActionType.InformByAlternatives:
+            movie_id = self._extract_selection(user_utterance, self.last_sys_act)
+            if movie_id is not None:
+                user_acts.append(UserAct(user_utterance, UserActionType.Inform, 'id', movie_id))
 
         for act in self.general_regex:
             if act == 'dontcare' or act == 'req_everything':
@@ -137,3 +163,34 @@ class MovieNLU(Service):
         self.debug_logger.dialog_turn("User Actions: %s" % str(user_acts))
 
         return {'user_acts': user_acts}
+
+    def _extract_selection(self, user_utterance: str, sys_act: SysAct) -> int:
+        titles = [title.lower() for title in sys_act.slot_values['title']]
+        movie_ids = sys_act.slot_values['id']
+        i = 0
+        for title in titles:
+            if title in user_utterance:
+                return movie_ids[i]
+            i += 1
+        for regex in FIRST_REGEXES:
+            match = regex.search(user_utterance)
+            if match:
+                return movie_ids[0]
+        for regex in SECOND_REGEX:
+            match = regex.search(user_utterance)
+            if match:
+                return movie_ids[1]
+        for regex in THIRD_REGEX:
+            match = regex.search(user_utterance)
+            if match:
+                return movie_ids[2]
+        for regex in LAST_REGEX:
+            match = regex.search(user_utterance)
+            if match:
+                return movie_ids[-1]
+        i = 0
+        for title in titles:
+            if user_utterance in title:
+                return movie_ids[i]
+            i += 1
+        return None   

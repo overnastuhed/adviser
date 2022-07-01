@@ -33,10 +33,12 @@ class SystemResponses:
 
     def ask_user_to_pick_from_multiple_results(results):
         sys_act = SysAct(SysActionType.InformByAlternatives)
-        sys_act.add_value('titles', [result['title'] for result in results])
+        for title, id in [(result['title'], result['id']) for result in results]:
+            sys_act.add_value('title', title)
+            sys_act.add_value('id', id)
         return sys_act
 
-    def recommend_movie(movie):
+    def suggest_movie(movie):
         sys_act = SysAct(SysActionType.ShowRecommendation)
         _add_values_to_sys_act(sys_act, movie)
         return sys_act

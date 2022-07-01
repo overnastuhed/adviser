@@ -105,13 +105,17 @@ class MovieDomain(LookupDomain):
         genre = list(constraints['genres'].keys())[0] if 'genres' in constraints else None
         genre_id = genre2id[genre] if genre else None
         year = constraints['release_year'] if 'release_year' in constraints else None
+        id = list(constraints['id'].keys())[0] if 'id' in constraints else None
 
         if person is None and genre is None and year is None:
             return []
         else:
             try:
                 person_id = [person['id']] if person else None
-                api_result = tmdb.Discover().movie(with_genres=genre_id, primary_release_year=year, with_cast=person_id)
+                if id is None:
+                    api_result = tmdb.Discover().movie(with_genres=genre_id, primary_release_year=year, with_cast=person_id)
+                else:
+                    api_result = tmdb.Movies(id=int(id)).info()
                 return self._canonicalize_api_result(api_result, person)
             except Exception as e:
                 print("EXCEPTION while querying API: ", e)
@@ -124,7 +128,10 @@ class MovieDomain(LookupDomain):
         
         Past this point, we don't care about what the api calls different fields.
         """
-        results = api_response['results']
+        if 'results' in api_response:
+            results = api_response['results']
+        else:
+            results = [api_response]
         canonicalized_results = []
         for movie in results:
             canonicalized_movie = {}
@@ -138,6 +145,8 @@ class MovieDomain(LookupDomain):
                 canonicalized_movie['release_year'] = movie['release_date'][:4]
             if 'genre_ids' in movie:
                 canonicalized_movie['genres'] = [id2genre[genre_id] for genre_id in movie['genre_ids']]
+            if 'genres' in movie: # the Movies.info call for some reason names the genre field differently
+                canonicalized_movie['genres'] = [id2genre[genre['id']] for genre in movie['genres']]
             if person is not None and 'name' in person:
                 canonicalized_movie['cast'] = person['name']
             if 'vote_average' in movie:

@@ -2,7 +2,7 @@ from utils.sysact import SysActionType
 from .test_utils import SysActFactory, BeliefStateFactory
 
 def get_policy_tests():
-    return get_general_tests() + get_question_answering_tests()
+    return get_general_tests() + get_question_answering_tests() + get_select_from_alternatives_tests()
 
 def get_general_tests():
     return [
@@ -181,6 +181,48 @@ def get_question_answering_tests():
             'expected_output': {
                 'sys_act': SysActFactory(SysActionType.Request)             # System asking the user to fill another slot, as just one is not enough to find a specific movie
                             .actor()
+                            .build()
+            }
+        }
+    ]
+
+def get_select_from_alternatives_tests():
+    return [
+        {
+            'input': BeliefStateFactory()
+                        .inform('looking_for_specific_movie', True)
+                        .inform('genres', 'action')                         
+                        .inform('cast', 'Bruce Willis')
+                        .inform('release_year', '1998')
+                        .build(), 
+            'expected_output': {
+                'sys_act': SysActFactory(SysActionType.InformByAlternatives)
+                            .title('Armageddon')                       # Bruce Willis really did have 3 movies released in 1998 :O
+                            .title('Mercury Rising')
+                            .title('The Siege')
+                            .id('95')    
+                            .id('8838')    
+                            .id('9882')    
+                            .build()
+            }
+        },
+        {
+            'input': BeliefStateFactory()
+                        .inform('looking_for_specific_movie', True)
+                        .inform('genres', 'action')                         
+                        .inform('cast', 'Bruce Willis')
+                        .inform('release_year', '1998')
+                        .inform('id', '8838')
+                        .build(), 
+            'expected_output': {
+                'sys_act': SysActFactory(SysActionType.InformByName)
+                            .id('8838')    
+                            .title('Mercury Rising')
+                            .overview(any=True)
+                            .year('1998')
+                            .genre(containing='action')
+                            .actor('Bruce Willis')
+                            .rating(any=True)
                             .build()
             }
         }

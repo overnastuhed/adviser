@@ -1,3 +1,5 @@
+from examples.webapi.movie.test_utils import SysActFactory
+from utils.sysact import SysActionType
 from utils import UserAct, UserActionType
 
 def get_nlu_tests():
@@ -97,6 +99,16 @@ def get_rating_tests():
         }
     ]
 
+def _inform_by_alternatives_3_movies():
+    return SysActFactory(SysActionType.InformByAlternatives) \
+                            .title('Armageddon') \
+                            .title('Mercury Rising') \
+                            .title('The Siege') \
+                            .id('95') \
+                            .id('8838') \
+                            .id('9882') \
+                            .build()
+
 def get_recommendation_tests():
     return [
         {
@@ -105,5 +117,45 @@ def get_recommendation_tests():
                                 UserAct("", UserActionType.Inform, 'genres', "action"),
                                 UserAct("", UserActionType.Inform, 'release_year', "1990"),
                                 UserAct("", UserActionType.Inform, 'looking_for_specific_movie', False)]
-        }
+        },
+
+        {
+            'input': ('The first one', _inform_by_alternatives_3_movies()), 
+            'expected_output': [ UserAct("", UserActionType.Inform, 'id', "95") ]
+        },
+        {
+            'input': ('first', _inform_by_alternatives_3_movies()), 
+            'expected_output': [ UserAct("", UserActionType.Inform, 'id', "95") ]
+        },
+        {
+            'input': ('armageddon', _inform_by_alternatives_3_movies()), 
+            'expected_output': [ UserAct("", UserActionType.Inform, 'id', "95") ]
+        },
+
+        {
+            'input': ('The second one', _inform_by_alternatives_3_movies()), 
+            'expected_output': [ UserAct("", UserActionType.Inform, 'id', "8838") ]
+        },
+        {
+            'input': ('2', _inform_by_alternatives_3_movies()), 
+            'expected_output': [ UserAct("", UserActionType.Inform, 'id', "8838") ]
+        },
+        {
+            'input': ('mercury rising', _inform_by_alternatives_3_movies()), 
+            'expected_output': [ UserAct("", UserActionType.Inform, 'id', "8838") ]
+        },
+
+
+        {
+            'input': ('last one', _inform_by_alternatives_3_movies()), 
+            'expected_output': [ UserAct("", UserActionType.Inform, 'id', "9882") ]
+        },
+        {
+            'input': ('third one', _inform_by_alternatives_3_movies()), 
+            'expected_output': [ UserAct("", UserActionType.Inform, 'id', "9882") ]
+        },
+        {
+            'input': ('siege', _inform_by_alternatives_3_movies()), 
+            'expected_output': [ UserAct("", UserActionType.Inform, 'id', "9882") ]
+        },
     ]        
