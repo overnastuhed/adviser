@@ -53,8 +53,6 @@ SHOW_RECOMMENDATION = [
     re.compile(r'\b(recommend|recommendation|suggest|suggestion)\b')
 ]
 
-SHOW_ANOTHER = [re.compile(r'\b(show me another one)\b')]
-
 class MovieNLU(Service):
     """Very simple NLU for the movie domain."""
 
@@ -84,10 +82,11 @@ class MovieNLU(Service):
         user_utterance = ' '.join(user_utterance.lower().split())
 
         for act in self.general_regex:
+            if act == 'dontcare' or act == 'req_everything':
+                continue
             if re.search(self.general_regex[act], user_utterance, re.I):
-                if act != 'dontcare' and act != 'req_everything':
-                    user_act_type = UserActionType(act)
-                    user_acts.append(UserAct(user_utterance, user_act_type))
+                user_act_type = UserActionType(act)
+                user_acts.append(UserAct(user_utterance, user_act_type))
         
         for regex in ACTOR_NAME_REGEXES:
             matches = re.finditer(regex, user_utterance)
@@ -106,12 +105,7 @@ class MovieNLU(Service):
             match = regex.search(user_utterance)
             if match:
                 user_acts.append(UserAct(user_utterance, UserActionType.Inform, 'looking_for_specific_movie', False))
-        
-        for regex in SHOW_ANOTHER:
-            match = regex.search(user_utterance)
-            if match:
-                user_acts.append(UserAct(user_utterance, UserActionType.RequestAlternatives))
-        
+                
         for regex in MOVIE_RATING_REQUEST_REGEX:
             match = regex.search(user_utterance)
             if match:
