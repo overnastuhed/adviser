@@ -17,11 +17,10 @@
 #
 ############################################################################################
 
-import re, time
-from datetime import datetime, timedelta
+import re, json, os
 from typing import List
 
-from utils import UserAct, UserActionType, DiasysLogger, SysAct, BeliefState
+from utils import UserAct, UserActionType, DiasysLogger
 from services.service import Service, PublishSubscribe
 from .actor_name_extractor import ActorNameExtractor
 from . import genre_synonyms
@@ -37,7 +36,6 @@ ACTOR_NAME_REGEXES = [
     re.compile(ACTOR_NAME_PLACEHOLDER)
 ]
 
-
 MOVIE_RELEASE_DATE_REGEXES = [
     re.compile(r'\b((?:19[0-9]|20(?:0|1|2))\d)\b'),   # Matches any year 1900 - 2029
     re.compile(r'\b(?:from|in|released) ([1-9]\d)\b') # or a more specific mention of a year by two numbers (such as '...released *in 95*...')
@@ -51,7 +49,9 @@ MOVIE_CAST_REQUEST_REGEX = [re.compile(r'\b(what is the cast of the movie)\b')]
 
 MOVIE_RATING_REQUEST_REGEX = [re.compile(r'\b(rating|score|is it (?:a )?(?:good|bad|ok)|how (?:good|bad|ok) is it)\b')]
 
-SHOW_RANDOM = [re.compile(r'\b(show me a random movie)\b')]
+SHOW_RECOMMENDATION = [
+    re.compile(r'\b(recommend|recommendation|suggest|suggestion)\b')
+]
 
 SHOW_ANOTHER = [re.compile(r'\b(show me another one)\b')]
 
@@ -62,6 +62,8 @@ class MovieNLU(Service):
         # only calls super class' constructor
         self.actor_name_extractor = ActorNameExtractor(ACTOR_NAME_PLACEHOLDER)
         super(MovieNLU, self).__init__(domain, debug_logger=logger)
+        path = os.path.join('adviser', 'resources', 'nlu_regexes', 'GeneralRules.json')
+        self.general_regex = json.load(open(path))
 
     @PublishSubscribe(sub_topics=["user_utterance"], pub_topics=["user_acts"])
     def extract_user_acts(self, user_utterance: str = None) -> dict(user_acts=List[UserAct]):
@@ -81,9 +83,11 @@ class MovieNLU(Service):
 
         user_utterance = ' '.join(user_utterance.lower().split())
 
-        for bye in ('bye', 'goodbye', 'byebye', 'seeyou'):
-            if user_utterance.replace(' ', '').endswith(bye):
-                return {'user_acts': [UserAct(user_utterance, UserActionType.Bye)]}
+        for act in self.general_regex:
+            if re.search(self.general_regex[act], user_utterance, re.I):
+                if act != 'dontcare' and act != 'req_everything':
+                    user_act_type = UserActionType(act)
+                    user_acts.append(UserAct(user_utterance, user_act_type))
         
         for regex in ACTOR_NAME_REGEXES:
             matches = re.finditer(regex, user_utterance)
@@ -92,16 +96,13 @@ class MovieNLU(Service):
                 user_acts.append(UserAct(user_utterance, UserActionType.Inform, 'cast', actors[actor_index]))
                 actor_index += 1
 
-        for thank in ('thanks', 'thankyou'):
-            if user_utterance.replace(' ', '').endswith(thank):
-                return {'user_acts': [UserAct(user_utterance, UserActionType.Thanks)]}
         
         for regex in MOVIE_CAST_REQUEST_REGEX:
             match = regex.search(user_utterance)
             if match:
                 user_acts.append(UserAct(user_utterance, UserActionType.Request, 'cast'))
         
-        for regex in SHOW_RANDOM:
+        for regex in SHOW_RECOMMENDATION:
             match = regex.search(user_utterance)
             if match:
                 user_acts.append(UserAct(user_utterance, UserActionType.RequestRecommendation))

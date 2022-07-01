@@ -8,6 +8,18 @@ def get_basic_tests():
         {
             'input': 'bye!', 
             'expected_output': [ UserAct("", UserActionType.Bye) ]
+        },
+        {
+            'input': 'yep', 
+            'expected_output': [ UserAct("", UserActionType.Affirm) ]
+        },
+        {
+            'input': 'yes!', 
+            'expected_output': [ UserAct("", UserActionType.Affirm) ]
+        },
+        {
+            'input': 'nope!', 
+            'expected_output': [ UserAct("", UserActionType.Deny) ]
         }
     ]
 
