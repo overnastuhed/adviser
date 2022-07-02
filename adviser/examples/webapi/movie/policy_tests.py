@@ -245,7 +245,6 @@ def get_year_tests():
                 'sys_act': SysActFactory(SysActionType.InformByAlternatives)
                             .id(any=True)
                             .title(any=True)
-                            .result_count(any=True)
                             .build()
             }
         },

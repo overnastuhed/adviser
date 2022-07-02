@@ -74,7 +74,53 @@ def get_year_tests():
                                 UserAct("", UserActionType.Inform, 'release_year', '>=1990'),
                                 UserAct("", UserActionType.Inform, 'release_year', '<=1999')
                                 ]
-        }
+        },
+        {
+            'input': "Give me a recent comedy movie", 
+            'expected_output': [ UserAct("", UserActionType.Inform, 'genres', "comedy"), 
+                                UserAct("", UserActionType.Inform, 'release_year', '>=2021')
+                                ]
+        },
+        {
+            'input': "Give me a classic western", 
+            'expected_output': [ UserAct("", UserActionType.Inform, 'genres', "western"), 
+                                UserAct("", UserActionType.Inform, 'release_year', '<=1980')
+                                ]
+        },
+        {
+            'input': "Give me a comedy from before the 90s", 
+            'expected_output': [ UserAct("", UserActionType.Inform, 'genres', "comedy"), 
+                                UserAct("", UserActionType.Inform, 'release_year', '<=1989')
+                                ]
+        },
+        {
+            'input': "Give me a comedy movie released between 1981 and 1985", 
+            'expected_output': [ UserAct("", UserActionType.Inform, 'genres', "comedy"), 
+                                UserAct("", UserActionType.Inform, 'release_year', '>=1981'),
+                                UserAct("", UserActionType.Inform, 'release_year', '<=1985')
+                                ]
+        },
+        {
+            'input': "Give me a movie released from 1970 to 1980", 
+            'expected_output': [ UserAct("", UserActionType.Inform, 'release_year', '>=1970'),
+                                UserAct("", UserActionType.Inform, 'release_year', '<=1980')
+                                ]
+        },
+        {
+            'input': "Give me a movie from 1970-1980", 
+            'expected_output': [ UserAct("", UserActionType.Inform, 'release_year', '>=1970'),
+                                UserAct("", UserActionType.Inform, 'release_year', '<=1980')
+                                ]
+        },
+        {
+            'input': "Give me a movie released later than 2000", 
+            'expected_output': [ UserAct("", UserActionType.Inform, 'release_year', '>=2001') ]
+        },
+        {
+            'input': "give me one released after 1995", 
+            'expected_output': [ UserAct("", UserActionType.Inform, 'release_year', '>=1996') ]
+        },
+        
     ]
 
 def get_rating_tests():

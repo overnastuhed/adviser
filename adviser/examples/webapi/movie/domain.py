@@ -117,8 +117,8 @@ class MovieDomain(LookupDomain):
                 if id is None:
                     api_result = tmdb.Discover().movie(with_genres=genre_id, 
                                                         primary_release_year=year, 
-                                                        primary_release_year_gte=year_gte, 
-                                                        primary_release_year_lte=year_lte, 
+                                                        primary_release_date_gte=year_gte, 
+                                                        primary_release_date_lte=year_lte, 
                                                         with_cast=person_id,
                                                         sort_by='popularity.desc')
                 else:
