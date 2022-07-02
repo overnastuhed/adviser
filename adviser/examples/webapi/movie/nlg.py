@@ -68,15 +68,21 @@ class MovieNLG(Service):
         elif sys_act.type == SysActionType.RequestMore:
             return {'sys_utterance': 'Do you want to look for another movie?'}
         elif sys_act.type == SysActionType.ShowRecommendation:
-            str_output = self.debug_output(sys_act)
-            return {'sys_utterance': "I've found several movies fitting the query, but no further selection is possible. Showing a random one:\n" + str_output}
+            output = InformTemplates(sys_act.slot_values).generate()
+            return {'sys_utterance': "How about this one?\n" + output}
         elif sys_act.type == SysActionType.InformByAlternatives:
             counter = 1
             movie_titles = ""
             for title in sys_act.slot_values['title']:
                 movie_titles += "\n" + f"{counter}) '{title}'" 
                 counter += 1
-            message = f"I've found {counter-1} movies. Which one do you want to know more about? {movie_titles}"
+
+            if 'num_results' in sys_act.slot_values:
+                num_results = sys_act.slot_values['num_results'][0]
+                message = f"I've found {num_results} movies. The 3 most popular ones are: {movie_titles}\nWhich one do you want to know more about?"
+
+            else:
+                message = f"I've found {counter-1} movies. Which one do you want to know more about? {movie_titles}"
 
             return {'sys_utterance': message}
         elif sys_act.type == SysActionType.NothingFound:

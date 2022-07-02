@@ -45,6 +45,10 @@ class SysActFactory():
     def confirm(self, question):
         self.sysact.add_value('confirm', question)
         return self
+    
+    def result_count(self, count=None, any=False):
+        self.sysact.add_value('num_results', count if not any else '*')
+        return self
 
     def build(self):
         return self.sysact
@@ -56,7 +60,12 @@ class BeliefStateFactory():
         self.bs.start_new_turn()
 
     def inform(self, slot, value):
-        self.bs['informs'][slot] = {value: 1.0}
+        if type(value) == list:
+            self.bs['informs'][slot] = {}
+            for v in value:
+                self.bs['informs'][slot][v] = 1.0
+        else:
+            self.bs['informs'][slot] = {value: 1.0}
         self.bs['user_acts'].add(UserActionType.Inform)
         return self
 

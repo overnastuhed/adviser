@@ -68,6 +68,7 @@ class MoviePolicy(Service):
         if UserActionType.Deny in user_actions:
             sys_act = self._user_is_answering_question(beliefstate, UserActionType.Deny)
 
+        # User answered in a way where we can return a response right away
         if sys_act is not None:
             return sys_act
         
@@ -97,34 +98,42 @@ class MoviePolicy(Service):
         elif question == 'looking_for_specific_movie':
             if answer == UserActionType.Deny:
                 beliefstate["informs"]['looking_for_specific_movie'] = {False: 1}
+                return None
             elif answer == UserActionType.Affirm:
                 beliefstate["informs"]['looking_for_specific_movie'] = {True: 1}
+                return None
             else:
                 return SystemResponses.bad()
 
     def _user_is_requesting_a_field(self, beliefstate):
         constraints = self._get_constraints(beliefstate)
         requested_field = self._get_requests(beliefstate)
-        results = self.domain.query(constraints)
-        if len(results) == 0:
+        results, result_count = self.domain.query(constraints)
+        if result_count == 0:
             return SystemResponses.nothing_found()
-        elif len(results) == 1:
+        elif result_count == 1:
             if requested_field in results[0]:
                 return SystemResponses.tell_user_about_requested_slot(requested_field, results[0][requested_field])
             else:
                 return SystemResponses.tell_user_data_couldnt_be_found(requested_field)
-        elif len(results) <= 3:
+        elif result_count <= 3:
             return SystemResponses.ask_user_to_pick_from_multiple_results(results)
         else:
             slot = self._get_open_slot(beliefstate)
             if slot:
                 return SystemResponses.ask_user_to_inform_about_a_slot(slot)
             else: # Too many results, no open slot to ask user about, so ask user to pick one of the found movies
-                return SystemResponses.ask_user_to_pick_from_multiple_results(results[0:3])
+                return SystemResponses.ask_user_to_pick_from_too_many_results(results, result_count)
 
     def _user_is_asking_for_alternative(self, beliefstate):
+        # If a specific movie was selected before, forget about it
+        if 'id' in beliefstate["informs"]:
+            del beliefstate["informs"]['id']
+
+        beliefstate["informs"]['looking_for_specific_movie'] = {False: 1}
+
         constraints = self._get_constraints(beliefstate)
-        results = self.domain.query(constraints)
+        results, result_count = self.domain.query(constraints)
     
         movies_already_shown_to_user = self._get_already_shown_movies(beliefstate)
 
@@ -135,8 +144,8 @@ class MoviePolicy(Service):
 
     def _user_is_asking_for_a_recommendation(self, beliefstate):
         constraints = self._get_constraints(beliefstate)
-        results = self.domain.query(constraints)
-        if len(results) == 0:
+        results, result_count = self.domain.query(constraints)
+        if result_count == 0:
             return SystemResponses.nothing_found()
         else:
             recommendation = results[0]
@@ -144,12 +153,12 @@ class MoviePolicy(Service):
 
     def _user_is_looking_for_a_specific_movie(self, beliefstate):
         constraints = self._get_constraints(beliefstate)
-        results = self.domain.query(constraints)
-        if len(results) == 0:
+        results, result_count = self.domain.query(constraints)
+        if result_count == 0:
             return SystemResponses.nothing_found()
-        elif len(results) == 1:
+        elif result_count == 1:
             return SystemResponses.tell_user_about_movie(results[0])
-        elif len(results) <= 3:
+        elif result_count <= 3:
             return SystemResponses.ask_user_to_pick_from_multiple_results(results)
         else:
             if len(constraints) <= 1:
@@ -158,7 +167,7 @@ class MoviePolicy(Service):
             if slot:
                 return SystemResponses.ask_user_to_inform_about_a_slot(slot)
             else: # Too many results, no open slot to ask user about, so ask user to pick one of the found movies
-                return SystemResponses.ask_user_to_pick_from_multiple_results(results[0:3])
+                return SystemResponses.ask_user_to_pick_from_too_many_results(results, result_count)
 
     def _get_constraints(self, beliefstate):
         return beliefstate['informs']
@@ -180,8 +189,9 @@ class MoviePolicy(Service):
                 continue
             sys_act = turn['sys_act']
             if sys_act.type == SysActionType.InformByName or \
-               sys_act.type == SysActionType.InformByAlternatives or \
                sys_act.type == SysActionType.ShowRecommendation:
+                if 'id' not in sys_act.slot_values:
+                   continue
                 shown_movie_ids.append(sys_act.slot_values['id'][0])
                 
         return shown_movie_ids

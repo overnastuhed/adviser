@@ -152,12 +152,14 @@ class MovieNLU(Service):
                     year = '19' + year
                 user_acts.append(UserAct(user_utterance, UserActionType.Inform, 'release_year', year))
 
-        #TODO: Make sure this still works
         for regex in MOVIE_RELEASE_DECADE_REGEXES:
             match = regex.search(user_utterance)
             if match:
-                decade = '19' + match.group(1)
-                user_acts.append(UserAct(user_utterance, UserActionType.Inform, 'release_decade', decade))
+                decade = match.group(1)
+                start_year = '19' + decade[0] + '0'
+                end_year = '19' + decade[0] + '9'
+                user_acts.append(UserAct(user_utterance, UserActionType.Inform, 'release_year', '>=' + start_year))
+                user_acts.append(UserAct(user_utterance, UserActionType.Inform, 'release_year', '<=' + end_year))
 
 
         self.debug_logger.dialog_turn("User Actions: %s" % str(user_acts))

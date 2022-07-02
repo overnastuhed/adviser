@@ -71,7 +71,9 @@ def get_year_tests():
         {
             'input': "Give me a comedy from the 90s", 
             'expected_output': [ UserAct("", UserActionType.Inform, 'genres', "comedy"), 
-                                UserAct("", UserActionType.Inform, 'release_decade', "1990")  ]
+                                UserAct("", UserActionType.Inform, 'release_year', '>=1990'),
+                                UserAct("", UserActionType.Inform, 'release_year', '<=1999')
+                                ]
         }
     ]
 

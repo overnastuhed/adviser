@@ -38,6 +38,11 @@ class SystemResponses:
             sys_act.add_value('id', id)
         return sys_act
 
+    def ask_user_to_pick_from_too_many_results(results, result_count):
+        sys_act = SystemResponses.ask_user_to_pick_from_multiple_results(results[0:3])
+        sys_act.add_value('num_results', result_count)
+        return sys_act
+
     def suggest_movie(movie):
         sys_act = SysAct(SysActionType.ShowRecommendation)
         _add_values_to_sys_act(sys_act, movie)

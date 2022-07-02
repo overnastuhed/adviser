@@ -104,22 +104,29 @@ class MovieDomain(LookupDomain):
         #TODO: make use of all genres that are passed, not just one
         genre = list(constraints['genres'].keys())[0] if 'genres' in constraints else None
         genre_id = genre2id[genre] if genre else None
-        year = constraints['release_year'] if 'release_year' in constraints else None
+        years = list(constraints['release_year'].keys()) if 'release_year' in constraints else None
+        year_gte, year_lte = self._extract_range_constraints(years)
+        year = years if year_gte is None and year_lte is None else None
         id = list(constraints['id'].keys())[0] if 'id' in constraints else None
 
         if person is None and genre is None and year is None:
-            return []
+            return [], 0
         else:
             try:
                 person_id = [person['id']] if person else None
                 if id is None:
-                    api_result = tmdb.Discover().movie(with_genres=genre_id, primary_release_year=year, with_cast=person_id)
+                    api_result = tmdb.Discover().movie(with_genres=genre_id, 
+                                                        primary_release_year=year, 
+                                                        primary_release_year_gte=year_gte, 
+                                                        primary_release_year_lte=year_lte, 
+                                                        with_cast=person_id,
+                                                        sort_by='popularity.desc')
                 else:
                     api_result = tmdb.Movies(id=int(id)).info()
                 return self._canonicalize_api_result(api_result, person)
             except Exception as e:
                 print("EXCEPTION while querying API: ", e)
-                return []
+                return [], 0
 
     def _canonicalize_api_result(self, api_response, person):
         """ 
@@ -130,8 +137,10 @@ class MovieDomain(LookupDomain):
         """
         if 'results' in api_response:
             results = api_response['results']
+            count = api_response['total_results']
         else:
             results = [api_response]
+            count = 1
         canonicalized_results = []
         for movie in results:
             canonicalized_movie = {}
@@ -152,7 +161,19 @@ class MovieDomain(LookupDomain):
             if 'vote_average' in movie:
                 canonicalized_movie['rating'] = str(movie['vote_average'])
             canonicalized_results.append(canonicalized_movie)
-        return canonicalized_results
+        return canonicalized_results, count
+    
+    def _extract_range_constraints(self, constraints):
+        gte = None
+        lte = None
+        if constraints is None:
+            return None, None
+        for constraint in constraints:
+            if '>=' in constraint:
+                gte = constraint[2:]
+            elif '<=' in constraint:
+                lte = constraint[2:]
+        return gte, lte
 
     def get_keyword(self):
         return 'movie'

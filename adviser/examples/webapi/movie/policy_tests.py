@@ -1,29 +1,12 @@
+from http.client import NETWORK_AUTHENTICATION_REQUIRED
 from utils.sysact import SysActionType
 from .test_utils import SysActFactory, BeliefStateFactory
 
 def get_policy_tests():
-    return get_general_tests() + get_question_answering_tests() + get_select_from_alternatives_tests()
+    return get_general_tests() + get_request_tests() + get_question_answering_tests() + get_select_from_alternatives_tests() + get_year_tests()
 
 def get_general_tests():
     return [
-        {
-            'input': BeliefStateFactory().build(), 
-            'expected_output': {
-                'sys_act': SysActFactory(SysActionType.Welcome).build()
-                        }
-        },
-        {
-            'input': BeliefStateFactory()
-                        .inform('release_year', '1986')
-                        .new_turn()
-                        .request('rating')
-                        .build(), 
-            'expected_output': {
-                'sys_act': SysActFactory(SysActionType.Request)
-                            .genre()        
-                            .build()
-                        }
-        },
         {
             'input': BeliefStateFactory()
                         .inform('release_year', '1986')
@@ -78,19 +61,6 @@ def get_general_tests():
         },
         {
             'input': BeliefStateFactory()
-                        .inform('release_year', '1986')
-                        .inform('genres', 'action')
-                        .inform('cast', 'Tom Cruise')   
-                        .new_turn(SysActFactory(SysActionType.InformByName).id('744').build()) # 744 is Top Gun, system already suggested it once so shouldn't suggest it again
-                        .request_alternative()            
-                        .build(), 
-            'expected_output': {
-                'sys_act': SysActFactory(SysActionType.NothingFound)
-                            .build()
-            }
-        },
-        {
-            'input': BeliefStateFactory()
                         .inform('release_year', '1990')
                         .inform('genres', 'action')
                         .build(), 
@@ -134,6 +104,41 @@ def get_general_tests():
                             .build()
             }
         }
+    ]
+
+def get_request_tests():
+    return [
+        {
+            'input': BeliefStateFactory().build(), 
+            'expected_output': {
+                'sys_act': SysActFactory(SysActionType.Welcome).build()
+                        }
+        },
+        {
+            'input': BeliefStateFactory()
+                        .inform('release_year', '1986')
+                        .new_turn()
+                        .request('rating')
+                        .build(), 
+            'expected_output': {
+                'sys_act': SysActFactory(SysActionType.Request)
+                            .genre()        
+                            .build()
+                        }
+        },
+        {
+            'input': BeliefStateFactory()
+                        .inform('release_year', '1986')
+                        .inform('genres', 'action')
+                        .inform('cast', 'Tom Cruise')   
+                        .new_turn(SysActFactory(SysActionType.InformByName).id('744').build()) # 744 is Top Gun, system already suggested it once so shouldn't suggest it again
+                        .request_alternative()            
+                        .build(), 
+            'expected_output': {
+                'sys_act': SysActFactory(SysActionType.NothingFound)
+                            .build()
+            }
+        },
     ]
 
 def get_question_answering_tests():
@@ -223,6 +228,39 @@ def get_select_from_alternatives_tests():
                             .genre(containing='action')
                             .actor('Bruce Willis')
                             .rating(any=True)
+                            .build()
+            }
+        }
+    ]
+
+def get_year_tests():
+    return [
+        {
+            'input': BeliefStateFactory()
+                        .inform('release_year', ['>=1980', '<=1989'])
+                        .inform('genres', 'action')
+                        .inform('cast', 'Tom Cruise')   
+                        .build(), 
+            'expected_output': {
+                'sys_act': SysActFactory(SysActionType.InformByAlternatives)
+                            .id(any=True)
+                            .title(any=True)
+                            .result_count(any=True)
+                            .build()
+            }
+        },
+        {
+            'input': BeliefStateFactory()
+                        .inform('release_year', ['>=1980', '<=1989'])
+                        .inform('genres', 'comedy')
+                        .inform('cast', 'Tom Hanks') 
+                        .new_turn(SysActFactory(SysActionType.InformByAlternatives).build()) # 744 is Top Gun, system already suggested it once so shouldn't suggest it again
+                        .build(), 
+            'expected_output': {
+                'sys_act': SysActFactory(SysActionType.InformByAlternatives)
+                            .id(any=True)
+                            .title(any=True)
+                            .result_count(any=True)
                             .build()
             }
         }
