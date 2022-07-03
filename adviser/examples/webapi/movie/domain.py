@@ -91,6 +91,7 @@ class MovieDomain(LookupDomain):
         return 'artificial_id'
 
     def query(self, constraints):
+        constraints = { slot:slot_values for (slot,slot_values) in constraints.items() if 'dontcare' not in slot_values.keys() }
         #TODO: handle multiple cast members
         if 'cast' in constraints:
             try:

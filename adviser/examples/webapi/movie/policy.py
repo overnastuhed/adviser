@@ -1,4 +1,4 @@
-import sys
+import copy
 from typing import List, Dict
 from random import choice
 from .system_responses import SystemResponses
@@ -33,7 +33,7 @@ class MoviePolicy(Service):
         elif UserActionType.Thanks in user_actions:
             sys_act = SystemResponses.ask_if_user_needs_something_else()
         # If user only says hello, request a random slot to move dialog along
-        elif UserActionType.Hello in user_actions:
+        elif UserActionType.Hello in user_actions and len(user_actions) == 1:
             #TODO: ask user what they want to do, give a hint as to what can be done
             slot = self._get_open_slot(beliefstate)
             sys_act = SystemResponses.ask_user_to_inform_about_a_slot(slot)
@@ -67,7 +67,8 @@ class MoviePolicy(Service):
             sys_act = self._user_is_answering_question(beliefstate, UserActionType.Affirm)
         if UserActionType.Deny in user_actions:
             sys_act = self._user_is_answering_question(beliefstate, UserActionType.Deny)
-
+        if UserActionType.DontCare in user_actions:
+            sys_act = self._user_doesnt_care(beliefstate)
         # User answered in a way where we can return a response right away
         if sys_act is not None:
             return sys_act
@@ -105,9 +106,17 @@ class MoviePolicy(Service):
             else:
                 return SystemResponses.bad()
 
+    def _user_doesnt_care(self, beliefstate):
+        requested_slot = self._get_slot_requested_by_system(beliefstate)
+        if requested_slot is not None:
+            beliefstate["informs"][requested_slot] = {'dontcare': 1}
+            beliefstate["informs"]['looking_for_specific_movie'] = {False: 1}
+
     def _user_is_requesting_a_field(self, beliefstate):
         constraints = self._get_constraints(beliefstate)
         requested_field = self._get_requests(beliefstate)
+        last_movie_id = self._get_last_movie_shown_to_user(beliefstate)
+        constraints['id'] = { last_movie_id: 1.0 }
         results, result_count = self.domain.query(constraints)
         if result_count == 0:
             return SystemResponses.nothing_found()
@@ -121,7 +130,7 @@ class MoviePolicy(Service):
         else:
             slot = self._get_open_slot(beliefstate)
             if slot:
-                return SystemResponses.ask_user_to_inform_about_a_slot(slot)
+                return SystemResponses.ask_user_to_inform_about_a_slot(slot) #TODO: this could have a better message. Right now, user is asking about a slot value and the system just responds "What actors are you interested in?" It could also explain why it needs more info
             else: # Too many results, no open slot to ask user about, so ask user to pick one of the found movies
                 return SystemResponses.ask_user_to_pick_from_too_many_results(results, result_count)
 
@@ -165,12 +174,12 @@ class MoviePolicy(Service):
                 return SystemResponses.ask_if_user_is_looking_for_a_recommendation(constraints)
             slot = self._get_open_slot(beliefstate)
             if slot:
-                return SystemResponses.ask_user_to_inform_about_a_slot(slot)
+                return SystemResponses.ask_user_to_inform_about_a_slot(slot) 
             else: # Too many results, no open slot to ask user about, so ask user to pick one of the found movies
                 return SystemResponses.ask_user_to_pick_from_too_many_results(results, result_count)
 
     def _get_constraints(self, beliefstate):
-        return beliefstate['informs']
+        return copy.deepcopy(beliefstate['informs'])
 
     def _get_requests(self, beliefstate):
         return list(beliefstate['requests'].keys())[0]
@@ -196,6 +205,18 @@ class MoviePolicy(Service):
                 
         return shown_movie_ids
 
+    def _get_last_movie_shown_to_user(self, beliefstate):
+        for turn in beliefstate._history:
+            if 'sys_act' not in turn:
+                continue
+            sys_act = turn['sys_act']
+            if sys_act.type == SysActionType.InformByName or \
+               sys_act.type == SysActionType.ShowRecommendation:
+                if 'id' not in sys_act.slot_values:
+                   continue
+                return sys_act.slot_values['id'][0]
+        return None
+
     def _get_question_asked_by_system(self, beliefstate):
         turn = beliefstate._history[-2]
         if 'sys_act' not in turn:
@@ -208,3 +229,15 @@ class MoviePolicy(Service):
             return "do_you_want_to_look_for_another_movie"
 
         return None
+
+    def _get_slot_requested_by_system(self, beliefstate):
+        turn = beliefstate._history[-2]
+        if 'sys_act' not in turn:
+            return None
+
+        sys_act = turn['sys_act']
+        if sys_act.type == SysActionType.Request:
+            return list(sys_act.slot_values.keys())[0]
+
+        return None
+

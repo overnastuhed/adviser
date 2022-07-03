@@ -37,6 +37,7 @@ class UserActionType(Enum):
     Ack = 'ack'
     Bad = 'bad'
     Confirm = 'confirm'
+    DontCare = 'dontcare'
     SelectDomain = 'selectdomain'
 
 

@@ -3,7 +3,7 @@ from utils.sysact import SysActionType
 from .test_utils import SysActFactory, BeliefStateFactory
 
 def get_policy_tests():
-    return get_general_tests() + get_request_tests() + get_question_answering_tests() + get_select_from_alternatives_tests() + get_year_tests()
+    return get_general_tests() + get_request_tests() + get_question_answering_tests() + get_select_from_alternatives_tests() + get_year_tests() + get_dont_care_tests() + get_recommendation_tests()
 
 def get_general_tests():
     return [
@@ -139,6 +139,19 @@ def get_request_tests():
                             .build()
             }
         },
+        {
+            'input': BeliefStateFactory()
+                        .inform('genres', 'action')
+                        .inform('looking_for_specific_movie', False)
+                        .new_turn(SysActFactory(SysActionType.ShowRecommendation).id('744').build())
+                        .request('rating')
+                        .build(), 
+            'expected_output': {
+                'sys_act': SysActFactory(SysActionType.InformByName)
+                            .rating(any=True)  
+                            .build()
+            }
+        },
     ]
 
 def get_question_answering_tests():
@@ -260,6 +273,65 @@ def get_year_tests():
                             .id(any=True)
                             .title(any=True)
                             .result_count(any=True)
+                            .build()
+            }
+        }
+    ]
+
+def get_dont_care_tests():
+    return [
+        {
+            'input': BeliefStateFactory()
+                        .inform('genres', 'action')
+                        .new_turn(SysActFactory(SysActionType.Request).actor().build()) 
+                        .dontcare()
+                        .build(), 
+            'expected_output': {
+                'sys_act': SysActFactory(SysActionType.ShowRecommendation)
+                            .id(any=True)
+                            .title(any=True)
+                            .genre(containing='action')
+                            .overview(any=True)
+                            .rating(any=True)
+                            .year(any=True)
+                            .build()
+            }
+        },
+        {
+            'input': BeliefStateFactory()
+                        .inform('genres', 'action')
+                        .new_turn(SysActFactory(SysActionType.Request).actor().build()) 
+                        .dontcare()
+                        .build(), 
+            'expected_output': {
+                'sys_act': SysActFactory(SysActionType.ShowRecommendation)
+                            .id(any=True)
+                            .title(any=True)
+                            .genre(containing='action')
+                            .overview(any=True)
+                            .rating(any=True)
+                            .year(any=True)
+                            .build()
+            }
+        }
+    ]
+
+def get_recommendation_tests():
+    return [
+        {
+            'input': BeliefStateFactory()
+                        .hello()
+                        .inform('genres', 'action')
+                        .inform('looking_for_specific_movie', False)
+                        .build(), 
+            'expected_output': {
+                'sys_act': SysActFactory(SysActionType.ShowRecommendation)
+                            .id(any=True)
+                            .title(any=True)
+                            .genre(containing='action')
+                            .overview(any=True)
+                            .rating(any=True)
+                            .year(any=True)
                             .build()
             }
         }

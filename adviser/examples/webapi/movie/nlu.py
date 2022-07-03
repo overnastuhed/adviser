@@ -131,8 +131,9 @@ class MovieNLU(Service):
                 user_acts.append(UserAct(user_utterance, UserActionType.Inform, 'id', movie_id))
 
         for act in self.general_regex:
-            if act == 'dontcare' or act == 'req_everything':
+            if act == 'req_everything':
                 continue
+            
             if re.search(self.general_regex[act], user_utterance, re.I):
                 user_act_type = UserActionType(act)
                 user_acts.append(UserAct(user_utterance, user_act_type))

@@ -22,10 +22,6 @@ class MovieBST(Service):
     @PublishSubscribe(sub_topics=["sys_act"])
     def update_bst_from_system_actions(self, sys_act: SysAct):
         self.bs['sys_act'] = sys_act
-        #TODO: I don't know if we care about these values... possibly can just remove them
-        #self.bs["num_matches"] = num_entries
-        #self.bs["discriminable"] = 
-
 
     @PublishSubscribe(sub_topics=["user_acts"], pub_topics=["beliefstate"])
     def update_bst_from_user_actions(self, user_acts: List[UserAct] = None) \

@@ -90,6 +90,14 @@ class BeliefStateFactory():
         self.bs['user_acts'].add(UserActionType.Bye)
         return self
 
+    def hello(self):
+        self.bs['user_acts'].add(UserActionType.Hello)
+        return self
+
+    def dontcare(self):
+        self.bs['user_acts'].add(UserActionType.DontCare)
+        return self
+
     def new_turn(self, taken_sys_act = None):
         if taken_sys_act:
             self.bs['sys_act'] = taken_sys_act
