@@ -87,11 +87,11 @@ def load_weather_domain():
 
 
 def load_movie_domain():
-    from examples.webapi.movie import MovieNLU, MovieNLG, MovieDomain, MoviePolicy
+    from examples.webapi.movie import MovieNLU, MovieNLG, MovieDomain, MoviePolicy, MovieBST
     movie = MovieDomain()
     movie_nlu = MovieNLU(domain=movie)
     movie_nlg = MovieNLG(domain=movie)
-    movie_bst = HandcraftedBST(domain=movie)
+    movie_bst = MovieBST(domain=movie)
     movie_policy = MoviePolicy(domain=movie)
     return movie, [movie_nlu, movie_nlg, movie_bst, movie_policy]
 

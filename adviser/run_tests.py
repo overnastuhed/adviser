@@ -1,4 +1,5 @@
 import argparse
+import traceback
 
 def load_movie_nlu_tests():
     from examples.webapi.movie import MovieNLU, MovieDomain, get_nlu_tests
@@ -23,7 +24,12 @@ def run_nlu_tests(nlu, tests):
     successful_test_count = 0
     for test in tests:
         input = test['input']
-        output = nlu.extract_user_acts(input)['user_acts']
+        
+        if type(input) is tuple:
+            nlu.save_last_sys_act(sys_act=input[1])
+            output = nlu.extract_user_acts(user_utterance=input[0])['user_acts']
+        else:
+            output = nlu.extract_user_acts(input)['user_acts']
 
         try:
             expected_output = test['expected_output']
@@ -32,6 +38,7 @@ def run_nlu_tests(nlu, tests):
             print('Input: ', input)
             print('Failed with exception: ')
             print(e)
+            print(traceback.format_exc())
             print('-------------------------------------------')
             continue
 
@@ -42,7 +49,7 @@ def run_nlu_tests(nlu, tests):
             else:
                 missing_acts.append(act)
 
-        if len(missing_acts) > 0:
+        if len(missing_acts) > 0 or len(output) > 0:
             print('---------------FAILED TEST-----------------')
             print('Input: ', input)
             if len(missing_acts) > 0:
@@ -69,6 +76,7 @@ def run_nlg_tests(nlg, tests):
             print('Input: ', input)
             print('Failed with exception: ')
             print(e)
+            print(traceback.format_exc())
             print('-------------------------------------------')
             continue
 
@@ -85,12 +93,23 @@ def run_nlg_tests(nlg, tests):
     print(f'{successful_test_count}/{len(tests)} NLG TESTS SUCCESSFUL')
 
 def compare_system_acts(a, b):
+    if a is None or b is None:
+        return False
     if a.type != b.type:
         return False
     if len(a.slot_values) != len(b.slot_values):
         return False
     for slot in a.slot_values.keys():
-        if a.slot_values[slot] != b.slot_values[slot] and a.slot_values[slot] != ['*'] and b.slot_values[slot] != ['*']:
+        if slot not in b.slot_values:
+            return False
+        a_value = a.slot_values[slot]
+        b_value = b.slot_values[slot]
+
+        if len(a_value) > 1 or len(b_value) > 1:
+            for b_val in b_value:
+                if b_val not in a_value and "*" not in a_value:
+                    return False
+        elif a_value != b_value and a_value != ['*'] and b_value != ['*']:
             return False
     return True
 
@@ -107,6 +126,7 @@ def run_policy_tests(policy, tests):
             print('Input: ', input)
             print('Failed with exception: ')
             print(e)
+            print(traceback.format_exc())
             print('-------------------------------------------')
             continue
 

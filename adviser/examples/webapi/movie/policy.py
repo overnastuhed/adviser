@@ -1,8 +1,8 @@
+import copy
 from typing import List, Dict
 from random import choice
+from .system_responses import SystemResponses
 
-
-from services.policy.policy_api import HandcraftedPolicy
 from services.service import PublishSubscribe, Service
 
 from utils import SysAct, SysActionType
@@ -12,110 +12,39 @@ from utils.useract import UserActionType
 from utils.logger import DiasysLogger
 from utils.domain.lookupdomain import LookupDomain
 
-
-
-class MoviePolicy(HandcraftedPolicy):
+class MoviePolicy(Service):
 
     def __init__(self, domain: LookupDomain, logger: DiasysLogger = DiasysLogger()):
-        """
-        Initializes the policy
-
-        Arguments:
-            domain {domain.lookupdomain.LookupDomain} -- Domain
-
-        """
-        self.first_turn = True
         Service.__init__(self, domain=domain)
-        self.last_action = None
-        self.current_suggestions = []  # list of current suggestions
-        self.s_index = 0  # the index in current suggestions for the current system reccomendation
-        self.domain_key = domain.get_primary_key()
         self.logger = logger
-        self.random = False
 
     @PublishSubscribe(sub_topics=["beliefstate"], pub_topics=["sys_act"])
-    def choose_sys_act(self, beliefstate: BeliefState = None) -> dict(sys_act=SysAct):
-
-        """
-            Responsible for walking the policy through a single turn. Uses the current user
-            action and system belief state to determine what the next system action should be.
-
-            To implement an alternate policy, this method may need to be overwritten
-
-            Args:
-                belief_state (BeliefState): a BeliefState object representing current system
-                                           knowledge
-            Returns:
-                (dict): a dictionary with the key "sys_act" and the value that of the systems next
-                        action
-
-        """
-        # variables for general (non-domain specific) actions
-        self._remove_gen_actions(beliefstate)
-
-        # do nothing on the first turn --LV
-        if self.first_turn and not beliefstate['user_acts']:
-            self.first_turn = False
-            sys_act = SysAct()
-            sys_act.type = SysActionType.Welcome
-            return {'sys_act': sys_act}
-        elif UserActionType.Bad in beliefstate["user_acts"]:
-            sys_act = SysAct()
-            sys_act.type = SysActionType.Bad
-        # if the action is 'bye' tell system to end dialog
-        elif UserActionType.Bye in beliefstate["user_acts"]:
-            sys_act = SysAct()
-            sys_act.type = SysActionType.Bye
+    def choose_sys_act(self, beliefstate: BeliefState = None) -> dict(sys_act=SysAct):   
+        user_actions = beliefstate["user_acts"]  
+        user_taking_no_action = not user_actions
+        is_first_turn = beliefstate.is_first_turn()
+        if is_first_turn and user_taking_no_action:
+            sys_act = SystemResponses.welcome()
+        elif UserActionType.Bad in user_actions:
+            sys_act = SystemResponses.bad()
+        elif UserActionType.Bye in user_actions:
+            sys_act = SystemResponses.bye()
         # if user only says thanks, ask if they want anything else
-        elif UserActionType.Thanks in beliefstate["user_acts"]:
-            self.random = False
-            sys_act = SysAct()
-            sys_act.type = SysActionType.RequestMore
-        # If user only says hello, request a random slot to move dialog along
-        elif UserActionType.Hello in beliefstate["user_acts"] or UserActionType.SelectDomain in beliefstate["user_acts"]:
-            sys_act = SysAct()
-            sys_act.type = SysActionType.Request
-            slot = self._get_open_slot(beliefstate)
-            sys_act.add_value(slot)
-
-            # If we switch to the domain, start a new dialog
-            if UserActionType.SelectDomain in beliefstate["user_acts"]:
-                self.dialog_start()
-            self.first_turn = False
-
-        # handle domain specific actions
+        elif UserActionType.Thanks in user_actions:
+            sys_act = SystemResponses.ask_if_user_needs_something_else()
+        elif UserActionType.Help in user_actions and len(user_actions) == 1:
+            sys_act = SystemResponses.tell_user_about_what_the_system_can_do()
+        elif UserActionType.Hello in user_actions and len(user_actions) == 1:
+            sys_act = SystemResponses.tell_user_about_what_the_system_can_do()
         else:
-            sys_act = self._next_action(beliefstate)
+            sys_act = self._get_domain_specific_action(beliefstate)
 
         self.logger.dialog_turn("System Action: " + str(sys_act))
 
         return {'sys_act': sys_act}
 
 
-    def _query_db(self, beliefstate: BeliefState, random = False):
-        """Based on the constraints specified, uses self.domain to generate the appropriate type
-           of query for the database
-
-        Returns:
-            iterable: representing the results of the database lookup
-
-        --LV
-        """
-        # determine if an entity has already been suggested or was mentioned by the user
-        name = self._get_name(beliefstate)
-        # if yes and the user is asking for info about a specific entity, generate a query to get
-        # that info for the slots they have specified
-        if name and beliefstate['requests']:
-            requested_slots = beliefstate['requests']
-            return self.domain.find_info_about_entity(name, requested_slots)
-        # otherwise, issue a query to find all entities which satisfy the constraints the user
-        # has given so far
-        else:
-            constraints, _ = self._get_constraints(beliefstate)
-            return self.domain.find_entities(constraints)
-
-
-    def _next_action(self, beliefstate: BeliefState):
+    def _get_domain_specific_action(self, beliefstate: BeliefState):
         """Determines the next system action based on the current belief state and
            previous action.
 
@@ -130,267 +59,187 @@ class MoviePolicy(HandcraftedPolicy):
 
         --LV
         """
-        # Assuming this happens only because domain is not actually active --LV
-        """if UserActionType.Bad in beliefstate['user_acts'] or beliefstate['requests'] \
-                and not self._get_name(beliefstate):
-            sys_act = SysAct()
-            sys_act.type = SysActionType.Bad
-            return sys_act, {'last_action': sys_act}"""
+        user_actions = beliefstate["user_acts"]  
 
-        if not self.has_enough_info_to_suggest(beliefstate):
-            sys_act = SysAct()
-            sys_act.type = SysActionType.Request
-            sys_act.add_value(self._get_open_mandatory_slot(beliefstate), None)
-            return sys_act
-
-        elif UserActionType.RequestAlternatives in beliefstate['user_acts'] \
-                and not self._get_constraints(beliefstate)[0]:
-            sys_act = SysAct()
-            sys_act.type = SysActionType.Bad
-            return sys_act
-
-        elif self.domain.get_primary_key() in beliefstate['informs'] \
-                and not beliefstate['requests']:
-            sys_act = SysAct()
-            sys_act.type = SysActionType.InformByName
-            sys_act.add_value(self.domain.get_primary_key(), self._get_name(beliefstate))
+        sys_act = None
+        if UserActionType.Affirm in user_actions:
+            sys_act = self._user_is_answering_question(beliefstate, UserActionType.Affirm)
+        if UserActionType.Deny in user_actions:
+            sys_act = self._user_is_answering_question(beliefstate, UserActionType.Deny)
+        if UserActionType.DontCare in user_actions:
+            sys_act = self._user_doesnt_care(beliefstate)
+        # User answered in a way where we can return a response right away
+        if sys_act is not None:
             return sys_act
         
-        # Otherwise we need to query the db to determine next action
-        if UserActionType.RequestRandom in beliefstate['user_acts'] :
-            self.random = True
-            results = self._query_db(beliefstate)
-            #results = self._query_db(beliefstate, True)
-            #results = [choice(self.domain.last_results[:beliefstate['num_matches']*(-1)])]
-            sys_act = SysAct()
-            sys_act.type = SysActionType.InformByName
-        else:
-            results = self._query_db(beliefstate)
-            sys_act = self._raw_action(results, beliefstate)
+        user_informs = beliefstate["informs"]
 
-        
-        # otherwise we need to convert a raw inform into a one with proper slots and values
-        if sys_act.type == SysActionType.InformByName:
-            self._convert_inform(results, sys_act, beliefstate)
-            # update belief state to reflect the offer we just made
-            values = sys_act.get_values(self.domain.get_primary_key())
-            if not values:
-                sys_act.add_value(self.domain.get_primary_key(), 'none')
-        elif sys_act.type == SysActionType.ShowRandom:
-            #results = [choice(results)]
-            self._convert_inform(results, sys_act, beliefstate)
-            values = sys_act.get_values(self.domain.get_primary_key())
-            if not values:
-                sys_act.add_value(self.domain.get_primary_key(), 'none')
+        if UserActionType.Request in user_actions:
+            return self._user_is_requesting_a_field(beliefstate)
+        elif UserActionType.RequestAlternatives in user_actions:
+            return self._user_is_asking_for_alternative(beliefstate)
+        elif 'looking_for_specific_movie' in user_informs and False in user_informs['looking_for_specific_movie']:
+            return self._user_is_asking_for_a_recommendation(beliefstate)
+        else: 
+            return self._user_is_looking_for_a_specific_movie(beliefstate)
 
-        return sys_act
+    def _user_is_answering_question(self, beliefstate, answer):
+        question = self._get_question_asked_by_system(beliefstate)
+        if question is None:
+            return
 
-    # This belongs to the case when multiple instances are returned by api
-    # TODO: put this to a separate file?
-    def _raw_action(self, q_res: iter, beliefstate: BeliefState) -> SysAct:
-        """Based on the output of the db query and the method, choose
-           whether next action should be request or inform
-
-        Args:
-            q_res (list): rows (list of dicts) returned by the issued
-            query to db
-           
-        Returns:
-            (SysAct): SysAct object of appropriate type
-
-        --LV
-        """
-        sys_act = SysAct()
-        # if there is more than one result
-        if len(q_res) > 1:
-            constraints, dontcare = self._get_constraints(beliefstate)
-            # Gather all the results for each column
-            temp = {key: [] for key in q_res[0].keys()}
-            # If any column has multiple values, ask for clarification
-            for result in q_res:
-                for key in result.keys():
-                    if key != self.domain.get_primary_key():
-                        temp[key].append(result[key])
-            next_req = self._find_possible_requests(temp, beliefstate)
-           #next_req = self._get_open_slot(beliefstate)
-            if next_req and not self.random:
-                sys_act.type = SysActionType.SuggestRequest
-                for slot in next_req:
-                    sys_act.add_value(slot, None)
-                return sys_act
+        elif question == 'do_you_want_to_look_for_another_movie':
+            if answer == UserActionType.Deny:
+                return SystemResponses.bye()
+            elif answer == UserActionType.Affirm and len(beliefstate['user_acts']) == 1:
+                #TODO: ask user what they want to do, give a hint as to what can be done
+                return SystemResponses.welcome()
+            
+        elif question == 'looking_for_specific_movie':
+            if answer == UserActionType.Deny:
+                beliefstate["informs"]['looking_for_specific_movie'] = {False: 1}
+                return None
+            elif answer == UserActionType.Affirm:
+                beliefstate["informs"]['looking_for_specific_movie'] = {True: 1}
+                return None
             else:
-                sys_act.type = SysActionType.ShowRandom
-                return sys_act
+                return SystemResponses.bad()
 
-        # Otherwise action type will be inform, so return an empty inform (to be filled in later)
-        sys_act.type = SysActionType.InformByName
-        return sys_act
+    def _user_doesnt_care(self, beliefstate):
+        requested_slot = self._get_slot_requested_by_system(beliefstate)
+        if requested_slot is not None:
+            beliefstate["informs"][requested_slot] = {'dontcare': 1}
+            beliefstate["informs"]['looking_for_specific_movie'] = {False: 1}
 
-    def _find_possible_requests(self, temp: Dict[str, List[str]], belief_state: BeliefState):
-        """
-        When several results are returned, either ask for more speficity or ask if a random movie should be returned
-        """
-        informed = [slot for slot in belief_state['informs']]
-        system_requestable = self.domain.get_system_requestable_slots()
-        unidentified = set(system_requestable) - set(informed)
-        if unidentified:
-            return unidentified
+    def _user_is_requesting_a_field(self, beliefstate):
+        constraints = self._get_constraints(beliefstate)
+        requested_field = self._get_requests(beliefstate)
+        # add id of the last movie that was shown to the user to the constraints, because that's the movie the user is asking about.
+        last_movie_id = self._get_last_movie_shown_to_user(beliefstate)
+        constraints['id'] = { last_movie_id: 1.0 }
+
+        #TODO: requesting the cast of a movie doesn't work currently, because query doesn't return any cast members unless there's an actor in the constraints already.
+        results, result_count = self.domain.query(constraints)
+        if result_count == 0:
+            return SystemResponses.nothing_found()
+        elif result_count == 1:
+            if requested_field in results[0]:
+                return SystemResponses.tell_user_about_requested_slot(requested_field, results[0][requested_field])
+            else:
+                return SystemResponses.tell_user_data_couldnt_be_found(requested_field)
+        elif result_count <= 3:
+            return SystemResponses.ask_user_to_pick_from_multiple_results(results)
         else:
+            slot = self._get_open_slot(beliefstate)
+            if slot:
+                return SystemResponses.ask_user_to_inform_about_a_slot(slot) #TODO: this could have a better message. Right now, user is asking about a slot value and the system just responds "What actors are you interested in?" It could also explain why it needs more info
+            else: # Too many results, no open slot to ask user about, so ask user to pick one of the found movies
+                return SystemResponses.ask_user_to_pick_from_too_many_results(results, result_count)
+
+    def _user_is_asking_for_alternative(self, beliefstate):
+        # If a specific movie was selected before, forget about it
+        if 'id' in beliefstate["informs"]:
+            del beliefstate["informs"]['id']
+
+        beliefstate["informs"]['looking_for_specific_movie'] = {False: 1}
+
+        constraints = self._get_constraints(beliefstate)
+        results, result_count = self.domain.query(constraints)
+    
+        movies_already_shown_to_user = self._get_already_shown_movies(beliefstate)
+
+        for result in results:
+            if result['id'] not in movies_already_shown_to_user:
+                return SystemResponses.suggest_movie(result)
+        return SystemResponses.nothing_found()
+
+    def _user_is_asking_for_a_recommendation(self, beliefstate):
+        constraints = self._get_constraints(beliefstate)
+        results, result_count = self.domain.query(constraints)
+        if result_count == 0:
+            return SystemResponses.nothing_found()
+        else:
+            recommendation = results[0]
+            return SystemResponses.suggest_movie(recommendation)
+
+    def _user_is_looking_for_a_specific_movie(self, beliefstate):
+        constraints = self._get_constraints(beliefstate)
+        results, result_count = self.domain.query(constraints)
+        if result_count == 0:
+            return SystemResponses.nothing_found()
+        elif result_count == 1:
+            return SystemResponses.tell_user_about_movie(results[0])
+        elif result_count <= 3:
+            return SystemResponses.ask_user_to_pick_from_multiple_results(results)
+        else:
+            if len(constraints) <= 1:
+                return SystemResponses.ask_if_user_is_looking_for_a_recommendation(constraints)
+            slot = self._get_open_slot(beliefstate)
+            if slot:
+                return SystemResponses.ask_user_to_inform_about_a_slot(slot) 
+            else: # Too many results, no open slot to ask user about, so ask user to pick one of the found movies
+                return SystemResponses.ask_user_to_pick_from_too_many_results(results, result_count)
+
+    def _get_constraints(self, beliefstate):
+        return copy.deepcopy(beliefstate['informs'])
+
+    def _get_requests(self, beliefstate):
+        return list(beliefstate['requests'].keys())[0]
+
+    def _get_open_slot(self, beliefstate):
+        current_constraints = self._get_constraints(beliefstate)
+        for slot in self.domain.get_system_requestable_slots():
+            if slot not in current_constraints:
+                return slot
+        return None
+
+    def _get_already_shown_movies(self, beliefstate):
+        shown_movie_ids = []
+        for turn in beliefstate._history:
+            if 'sys_act' not in turn:
+                continue
+            sys_act = turn['sys_act']
+            if sys_act.type == SysActionType.InformByName or \
+               sys_act.type == SysActionType.ShowRecommendation:
+                if 'id' not in sys_act.slot_values:
+                   continue
+                shown_movie_ids.append(sys_act.slot_values['id'][0])
+                
+        return shown_movie_ids
+
+    def _get_last_movie_shown_to_user(self, beliefstate):
+        for turn in beliefstate._history:
+            if 'sys_act' not in turn:
+                continue
+            sys_act = turn['sys_act']
+            if sys_act.type == SysActionType.InformByName or \
+               sys_act.type == SysActionType.ShowRecommendation:
+                if 'id' not in sys_act.slot_values:
+                   continue
+                return sys_act.slot_values['id'][0]
+        return None
+
+    def _get_question_asked_by_system(self, beliefstate):
+        turn = beliefstate._history[-2]
+        if 'sys_act' not in turn:
             return None
 
-    def _convert_inform(self, q_results: iter,
-                        sys_act: SysAct, beliefstate: BeliefState):
-        """Fills in the slots and values for a raw inform so it can be returned as the
-           next system action.
+        sys_act = turn['sys_act']
+        if sys_act.type == SysActionType.Confirm:
+            return sys_act.slot_values['confirm'][0]
+        elif sys_act.type == SysActionType.RequestMore:
+            return "do_you_want_to_look_for_another_movie"
 
-        Args:
-            method (str): the type of user action
-                     ('byprimarykey', 'byconstraints', 'byalternatives')
-            q_results (list): Results of SQL database query
-            sys_act (SysAct): the act to be modified
-            belief_state(dict): contains info on what columns were queried
+        return None
 
-        --LV
-        """
-        if beliefstate['requests']:
-            self._convert_inform_by_primkey(q_results, sys_act, beliefstate)
+    def _get_slot_requested_by_system(self, beliefstate):
+        turn = beliefstate._history[-2]
+        if 'sys_act' not in turn:
+            return None
 
-        elif UserActionType.RequestAlternatives in beliefstate['user_acts']:
-            self._convert_inform_by_alternatives(sys_act, q_results, beliefstate)
+        sys_act = turn['sys_act']
+        if sys_act.type == SysActionType.Request:
+            return list(sys_act.slot_values.keys())[0]
 
-        else:
-            self._convert_inform_by_constraints(q_results, sys_act, beliefstate)
+        return None
 
-    def _convert_inform_by_primkey(self, q_results: iter,
-                                   sys_act: SysAct, belief_state: BeliefState):
-        """
-            Helper function that adds the values for slots to a SysAct object when the system
-            is answering a request for information about an entity from the user
-
-            Args:
-                q_results (iterable): list of query results from the database
-                sys_act (SysAct): current raw sys_act to be filled in
-                belief_state (BeliefState)
-
-        """
-        sys_act.type = SysActionType.InformByName
-        if q_results:
-            result = q_results[0]  # currently return just the first result
-            keys_r = list(result.keys())  # should represent all user specified constraints
-            requests = list(belief_state['requests'].keys())
-
-            keys = set.intersection(set(keys_r), set(requests))
-
-            # add slots + values (where available) to the sys_act
-            for k in keys:
-                res = result[k] if result[k] else 'not available'
-                sys_act.add_value(k, res)
-            # Name might not be a constraint in request queries, so add it
-            if self.domain.get_primary_key() not in keys:
-                name = self._get_name(belief_state)
-                sys_act.add_value(self.domain.get_primary_key(), name)
-            # Add default Inform slots
-            #for slot in self.domain.get_default_inform_slots():
-                #if slot not in sys_act.slot_values:
-                    #sys_act.add_value(slot, result[slot])
-        else:
-            sys_act.add_value(self.domain.get_primary_key(), 'none')
-
-
-    def _convert_inform_by_constraints(self, q_results: iter,
-                                       sys_act: SysAct, belief_state: BeliefState):
-        """
-            Helper function for filling in slots and values of a raw inform act when the system is
-            ready to make the user an offer
-
-            Args:
-                q_results (iter): the results from the databse query
-                sys_act (SysAct): the raw infor act to be filled in
-                belief_state (BeliefState): the current system beliefs
-
-        """
-        if list(q_results):
-            self.current_suggestions = []
-            self.s_index = 0
-            for result in q_results:
-                self.current_suggestions.append(result)
-            result = self.current_suggestions[0]
-            sys_act.add_value(self.domain.get_primary_key(), result[self.domain.get_primary_key()])
-            # Add default Inform slots
-            for slot in self.domain.get_default_inform_slots():
-                if slot not in sys_act.slot_values:
-                    sys_act.add_value(slot, result[slot])
-        else:
-            sys_act.add_value(self.domain.get_primary_key(), 'none')
-
-        #sys_act.type = SysActionType.InformByName
-        constraints, dontcare = self._get_constraints(belief_state)
-        for c in constraints:
-            # Using constraints here rather than results to deal with empty
-            # results sets (eg. user requests something impossible) --LV
-            sys_act.add_value(c, constraints[c])
-
-        if self.current_suggestions:
-            for slot in belief_state['requests']:
-                if slot not in sys_act.slot_values:
-                    sys_act.add_value(slot, self.current_suggestions[0][slot])
-    
-    def _convert_inform_by_alternatives(
-            self, sys_act: SysAct, q_res: iter, belief_state: BeliefState):
-        """
-            Helper Function, scrolls through the list of alternative entities which match the
-            user's specified constraints and uses the next item in the list to fill in the raw
-            inform act.
-
-            When the end of the list is reached, currently continues to give last item in the list
-            as a suggestion
-
-            Args:
-                sys_act (SysAct): the raw inform to be filled in
-                belief_state (BeliefState): current system belief state ()
-
-        """
-        if q_res and not self.current_suggestions:
-            self.current_suggestions = []
-            self.s_index = -1
-            for result in q_res:
-                self.current_suggestions.append(result)
-        
-        self.s_index += 1
-        # here we should scroll through possible offers presenting one each turn the user asks
-        # for alternatives
-        if self.s_index <= len(self.current_suggestions) - 1:
-            # the first time we inform, we should inform by name, so we use the right template
-            if self.s_index == 0:
-                sys_act.type = SysActionType.InformByName
-            else:
-                sys_act.type = SysActionType.InformByAlternatives
-            result = self.current_suggestions[self.s_index]
-            # Inform by alternatives according to our current templates is
-            # just a normal inform apparently --LV
-            sys_act.add_value(self.domain_key, result[self.domain_key])
-        else:
-            sys_act.type = SysActionType.InformByAlternatives
-            # default to last suggestion in the list
-            self.s_index = len(self.current_suggestions) - 1
-            sys_act.add_value(self.domain.get_primary_key(), 'none')
-
-        # in addition to the name, add the constraints the user has specified, so they know the
-        # offer is relevant to them
-        # Add default Inform slots
-        for slot in self.domain.get_default_inform_slots():
-            if slot not in sys_act.slot_values:
-                sys_act.add_value(slot, result[slot])
-
-        constraints, dontcare = self._get_constraints(belief_state)
-        for c in constraints:
-            sys_act.add_value(c, constraints[c])
-        
-    
-    def has_enough_info_to_suggest(self, belief_state: BeliefState):
-        """whether or not all mandatory slots have a value
-
-        Arguments:
-        """
-        filled_slots, _ = self._get_constraints(belief_state)
-        return self.domain.has_enough_constraints_to_query(filled_slots)

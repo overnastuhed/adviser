@@ -19,6 +19,7 @@
 
 from .nlu import MovieNLU
 from .nlg import MovieNLG
+from .bst import MovieBST
 from .domain import MovieDomain
 from .policy import MoviePolicy
 from .nlu_tests import get_nlu_tests
