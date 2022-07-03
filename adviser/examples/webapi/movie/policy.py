@@ -32,11 +32,10 @@ class MoviePolicy(Service):
         # if user only says thanks, ask if they want anything else
         elif UserActionType.Thanks in user_actions:
             sys_act = SystemResponses.ask_if_user_needs_something_else()
-        # If user only says hello, request a random slot to move dialog along
+        elif UserActionType.Help in user_actions and len(user_actions) == 1:
+            sys_act = SystemResponses.tell_user_about_what_the_system_can_do()
         elif UserActionType.Hello in user_actions and len(user_actions) == 1:
-            #TODO: ask user what they want to do, give a hint as to what can be done
-            slot = self._get_open_slot(beliefstate)
-            sys_act = SystemResponses.ask_user_to_inform_about_a_slot(slot)
+            sys_act = SystemResponses.tell_user_about_what_the_system_can_do()
         else:
             sys_act = self._get_domain_specific_action(beliefstate)
 
@@ -115,8 +114,11 @@ class MoviePolicy(Service):
     def _user_is_requesting_a_field(self, beliefstate):
         constraints = self._get_constraints(beliefstate)
         requested_field = self._get_requests(beliefstate)
+        # add id of the last movie that was shown to the user to the constraints, because that's the movie the user is asking about.
         last_movie_id = self._get_last_movie_shown_to_user(beliefstate)
         constraints['id'] = { last_movie_id: 1.0 }
+
+        #TODO: requesting the cast of a movie doesn't work currently, because query doesn't return any cast members unless there's an actor in the constraints already.
         results, result_count = self.domain.query(constraints)
         if result_count == 0:
             return SystemResponses.nothing_found()

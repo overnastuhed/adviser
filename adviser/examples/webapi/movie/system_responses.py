@@ -13,6 +13,9 @@ class SystemResponses:
     def ask_if_user_needs_something_else():
         return SysAct(SysActionType.RequestMore)
 
+    def tell_user_about_what_the_system_can_do():
+        return SysAct(SysActionType.Help)
+
     def ask_user_to_inform_about_a_slot(slot):
         sys_act = SysAct(SysActionType.Request)
         sys_act.add_value(slot, None)

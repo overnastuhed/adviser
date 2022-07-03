@@ -69,9 +69,11 @@ MOVIE_RELEASE_DATE_RANGE_REGEXES = [
     re.compile(r"\b(?:between|from|starting) " + YEAR_REGEX_1 + r"(?: to | ?- ?| and )" + YEAR_REGEX_1)
 ]
 
-MOVIE_CAST_REQUEST_REGEX = [re.compile(r'\b(what is the cast of the movie)\b')]
+MOVIE_CAST_REQUEST_REGEX = [re.compile(r'\b(what is the cast of the movie)\b')] #TODO: improve this regex.
 
 MOVIE_RATING_REQUEST_REGEX = [re.compile(r'\b(rating|score|is it (?:a )?(?:good|bad|ok)|how (?:good|bad|ok) is it)\b')]
+
+#TODO: ability to request the overview: Tell me about the movie? What is it about? etc. Together with this, would be nice to not always return the rating and overview, so theres a point for the user to ask specific stuff.
 
 SHOW_RECOMMENDATION = [
     re.compile(r'\b(recommend|recommendation|suggest|suggestion)\b')
@@ -92,6 +94,11 @@ THIRD_REGEX = [
 LAST_REGEX = [
     re.compile(r'\b(last)\b'),
 ]
+
+HELP_REGEX = [
+    re.compile(r"\b(help|don'?t know|do not know|what can (i|you) do)\b"),
+]
+
 class MovieNLU(Service):
     """Very simple NLU for the movie domain."""
 
@@ -170,6 +177,17 @@ class MovieNLU(Service):
         year_user_acts = self._match_years(user_utterance)
         for act in year_user_acts:
             user_acts.append(act)
+
+        # if no helpful user act was matched, check if user needs help
+        if len(user_acts) == 0:
+            for regex in HELP_REGEX:
+                match = regex.search(user_utterance)
+                if match:
+                    user_acts.append(UserAct(user_utterance, UserActionType.Help))
+
+        # if still no user act was matched, assume it's bad input
+        if len(user_acts) == 0:
+            user_acts.append(UserAct(user_utterance, UserActionType.Bad)) 
 
         self.debug_logger.dialog_turn("User Actions: %s" % str(user_acts))
 

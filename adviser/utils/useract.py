@@ -39,6 +39,7 @@ class UserActionType(Enum):
     Confirm = 'confirm'
     DontCare = 'dontcare'
     SelectDomain = 'selectdomain'
+    Help = 'help'
 
 
 class UserAct(object):

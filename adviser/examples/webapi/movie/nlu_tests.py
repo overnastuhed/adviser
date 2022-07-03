@@ -3,7 +3,7 @@ from utils.sysact import SysActionType
 from utils import UserAct, UserActionType
 
 def get_nlu_tests():
-    return get_basic_tests() + get_actor_tests() + get_year_tests() + get_rating_tests() + get_genre_tests() + get_recommendation_tests()
+    return get_basic_tests() + get_actor_tests() + get_year_tests() + get_rating_tests() + get_genre_tests() + get_recommendation_tests() + get_bad_tests()
 
 def get_basic_tests():
     return [
@@ -207,3 +207,28 @@ def get_recommendation_tests():
             'expected_output': [ UserAct("", UserActionType.Inform, 'id', "9882") ]
         },
     ]        
+
+def get_bad_tests():
+    return [
+        {
+            'input': "adfgsdfghn",
+            'expected_output': [ UserAct("", UserActionType.Bad) ]
+        },
+        {
+            'input': "I don't know what to do",
+            'expected_output': [ UserAct("", UserActionType.Help) ]
+        },
+        {
+            'input': "Help me do something",
+            'expected_output': [ UserAct("", UserActionType.Help) ]
+        },
+        {
+            'input': "Help me find an action movie with Tom Cruise",
+            'expected_output': [ UserAct("", UserActionType.Inform, 'genres', "action"),
+                                UserAct("", UserActionType.Inform, 'cast', "Tom Cruise")]
+        },
+        {
+            'input': "Give me any movie",
+            'expected_output': [ UserAct("", UserActionType.Bad) ]
+        },
+    ]

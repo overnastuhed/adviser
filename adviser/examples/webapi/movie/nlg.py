@@ -49,7 +49,9 @@ class MovieNLG(Service):
         if sys_act.type == SysActionType.Bad:
             return {'sys_utterance': 'Sorry, I could not understand you.'}
         elif sys_act.type == SysActionType.Bye:
-            return {'sys_utterance': 'Thank you, good bye'}
+            return {'sys_utterance': 'Thank you, good bye!'}
+        elif sys_act.type == SysActionType.Help:
+            return {'sys_utterance': 'I can help you find a movie based on its genre, cast, and release year.'}
         elif sys_act.type == SysActionType.Request:
             slot = list(sys_act.slot_values.keys())[0]
             if slot == 'release_year':
@@ -61,7 +63,7 @@ class MovieNLG(Service):
             else:
                 # This should probably be changed
                 assert False, 'Only a year and a genre can be requested'
-        elif sys_act.type == SysActionType.SuggestRequest:
+        elif sys_act.type == SysActionType.SuggestRequest: #TODO: this action isn't used in the policy currently... Maybe it could also be changed to a regular Request (requesting 'looking_for_specific_movie')?
             features = list(sys_act.slot_values.keys())
             f_srt = ", ".join(features)
             return {'sys_utterance': f'I have found several movies fitting you query. Do you want me to show a random movie? Otherwise, you can additionally specify the following features: {f_srt}.'}

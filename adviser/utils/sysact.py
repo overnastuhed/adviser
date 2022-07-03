@@ -39,6 +39,7 @@ class SysActionType(Enum):
     SuggestRequest = 'suggest_request'
     ShowRecommendation = 'show_recommendation'
     NothingFound = 'nothing_found'
+    Help = 'help'
 
 
 class SysAct(object):
