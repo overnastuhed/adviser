@@ -169,8 +169,8 @@ class MovieNLU(Service):
                 user_acts.append(UserAct(user_utterance, UserActionType.Request, 'rating'))
 
         for regex in MOVIE_GENRE_REGEXES:
-            match = regex.search(user_utterance)
-            if match:
+            matches = list(re.finditer(regex, user_utterance))
+            for match in matches:
                 genre = match.group(0)
                 normalized_genre = genre_synonyms.MAPPING[genre]
                 user_acts.append(UserAct(user_utterance, UserActionType.Inform, 'genres', normalized_genre))

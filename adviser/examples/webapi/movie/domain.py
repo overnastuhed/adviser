@@ -108,20 +108,20 @@ class MovieDomain(LookupDomain):
             person = None
 
         #TODO: make use of all genres that are passed, not just one
-        genre = list(constraints['genres'].keys())[0] if 'genres' in constraints else None
-        genre_id = genre2id[genre] if genre else None
+        genres = list(constraints['genres'].keys()) if 'genres' in constraints else None
+        genre_ids = [genre2id[genre] for genre in genres] if genres else None
         years = list(constraints['release_year'].keys()) if 'release_year' in constraints else None
         year_gte, year_lte = self._extract_range_constraints(years)
         year = years if year_gte is None and year_lte is None else None
         id = list(constraints['id'].keys())[0] if 'id' in constraints else None
 
-        if person is None and genre is None and year is None:
+        if person is None and genres is None and year is None:
             return [], 0
         else:
             try:
                 person_id = [person_['id'] for person_ in person] if person else None
                 if id is None:
-                    api_result = tmdb.Discover().movie(with_genres=genre_id, 
+                    api_result = tmdb.Discover().movie(with_genres=genre_ids, 
                                                         primary_release_year=year, 
                                                         primary_release_date_gte=year_gte, 
                                                         primary_release_date_lte=year_lte, 
