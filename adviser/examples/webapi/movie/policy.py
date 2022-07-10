@@ -19,7 +19,7 @@ class MoviePolicy(Service):
         self.logger = logger
 
     @PublishSubscribe(sub_topics=["beliefstate"], pub_topics=["sys_act"])
-    def choose_sys_act(self, beliefstate: BeliefState = None) -> dict(sys_act=SysAct):   
+    def choose_sys_act(self, beliefstate: BeliefState = None) -> dict(sys_act=SysAct):  
         user_actions = beliefstate["user_acts"]  
         user_taking_no_action = not user_actions
         is_first_turn = beliefstate.is_first_turn()
@@ -207,7 +207,7 @@ class MoviePolicy(Service):
         return shown_movie_ids
 
     def _get_last_movie_shown_to_user(self, beliefstate):
-        for turn in beliefstate._history:
+        for turn in reversed(beliefstate._history):
             if 'sys_act' not in turn:
                 continue
             sys_act = turn['sys_act']
