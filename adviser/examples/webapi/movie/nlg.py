@@ -44,7 +44,7 @@ class MovieNLG(Service):
         """
 
         if sys_act is None or sys_act.type == SysActionType.Welcome:
-            return {'sys_utterance': 'Hi! What do you want to know about movies?'}
+            return {'sys_utterance': 'Hi! Lets talk about movies. What kind of movie are you looking for? You can tell me the following: genre, cast, and release year.'}
 
         if sys_act.type == SysActionType.Bad:
             return {'sys_utterance': 'Sorry, I could not understand you.'}
@@ -55,11 +55,11 @@ class MovieNLG(Service):
         elif sys_act.type == SysActionType.Request:
             slot = list(sys_act.slot_values.keys())[0]
             if slot == 'release_year':
-                return {'sys_utterance': 'For which year are you looking for a movie?'}
+                return {'sys_utterance': 'Multiple movies found. To narrow down the search, could you please tell me for which year you are looking for a movie?'}
             elif slot == 'genres':
-                return {'sys_utterance': 'Which genre are you interested in?'}
+                return {'sys_utterance': 'Multiple movies found. To narrow down the search, could you please tell me which genre you are interested in?'}
             elif slot == 'cast':
-                return {'sys_utterance': 'What actors are you interested in?'}
+                return {'sys_utterance': 'Multiple movies found. To narrow down the search, could you please tell me what actors you are interested in?'}
             else:
                 # This should probably be changed
                 assert False, 'Only a year and a genre can be requested'

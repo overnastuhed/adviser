@@ -92,13 +92,18 @@ class MovieDomain(LookupDomain):
 
     def query(self, constraints):
         constraints = { slot:slot_values for (slot,slot_values) in constraints.items() if 'dontcare' not in slot_values.keys() }
-        #TODO: handle multiple cast members
+        person = None
         if 'cast' in constraints:
-            try:
-                person = tmdb.Search().person(query = constraints['cast'])['results'][0]
-            except Exception as e:
-                print("EXCEPTION while querying for person: ", e)
-                person = None
+            for actor in constraints['cast'].keys():
+                try:
+                    person_ = tmdb.Search().person(query = actor)['results'][0]
+                    if person == None:
+                        person = [person_]
+                    else:
+                        person.append(person_)
+                except Exception as e:
+                    print("EXCEPTION while querying for person: ", e)
+                    person = None
         else:
             person = None
 
@@ -114,7 +119,7 @@ class MovieDomain(LookupDomain):
             return [], 0
         else:
             try:
-                person_id = [person['id']] if person else None
+                person_id = [person_['id'] for person_ in person] if person else None
                 if id is None:
                     api_result = tmdb.Discover().movie(with_genres=genre_id, 
                                                         primary_release_year=year, 
@@ -124,6 +129,11 @@ class MovieDomain(LookupDomain):
                                                         sort_by='popularity.desc')
                 else:
                     api_result = tmdb.Movies(id=int(id)).info()
+                    actors = []
+                    full_cast = tmdb.Movies(id=int(id)).credits()['cast']
+                    for i in range(3):
+                        actors.append(full_cast[i]['name'])
+                    person = ", ".join(actors)
                 return self._canonicalize_api_result(api_result, person)
             except Exception as e:
                 print("EXCEPTION while querying API: ", e)
@@ -157,8 +167,14 @@ class MovieDomain(LookupDomain):
                 canonicalized_movie['genres'] = [id2genre[genre_id] for genre_id in movie['genre_ids']]
             if 'genres' in movie: # the Movies.info call for some reason names the genre field differently
                 canonicalized_movie['genres'] = [id2genre[genre['id']] for genre in movie['genres']]
-            if person is not None and 'name' in person:
-                canonicalized_movie['cast'] = person['name']
+            if person is not None and type(person) == list:
+                cast = []
+                for person_ in person:
+                    if 'name' in person_:
+                        cast.append(person_['name'])
+                canonicalized_movie['cast'] = ", ".join(cast)
+            elif person is not None and type(person) == str:
+                canonicalized_movie['cast'] = person
             if 'vote_average' in movie:
                 canonicalized_movie['rating'] = str(movie['vote_average'])
             canonicalized_results.append(canonicalized_movie)

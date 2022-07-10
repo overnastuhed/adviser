@@ -106,7 +106,8 @@ class MovieNLU(Service):
         # only calls super class' constructor
         self.actor_name_extractor = ActorNameExtractor(ACTOR_NAME_PLACEHOLDER)
         super(MovieNLU, self).__init__(domain, debug_logger=logger)
-        path = os.path.join('adviser', 'resources', 'nlu_regexes', 'GeneralRules.json')
+        #path = os.path.join('adviser', 'resources', 'nlu_regexes', 'GeneralRules.json')
+        path = os.path.join('resources', 'nlu_regexes', 'GeneralRules.json')
         self.general_regex = json.load(open(path))
         self.last_sys_act = None
 

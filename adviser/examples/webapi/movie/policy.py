@@ -118,7 +118,6 @@ class MoviePolicy(Service):
         last_movie_id = self._get_last_movie_shown_to_user(beliefstate)
         constraints['id'] = { last_movie_id: 1.0 }
 
-        #TODO: requesting the cast of a movie doesn't work currently, because query doesn't return any cast members unless there's an actor in the constraints already.
         results, result_count = self.domain.query(constraints)
         if result_count == 0:
             return SystemResponses.nothing_found()
