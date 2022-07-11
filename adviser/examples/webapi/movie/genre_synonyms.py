@@ -7,6 +7,7 @@ MAPPING = {
     'animated' : 'animation',
     
     'comedy' : 'comedy',
+    'comedies' : 'comedy',
     
     'crime' : 'crime',
     
@@ -39,10 +40,12 @@ MAPPING = {
     'tv movie' : 'tv movie',
     
     'thriller' : 'thriller',
+    'thrillers' : 'thriller',
     
     'war' : 'war',
     
-    'western' : 'western'
+    'western' : 'western',
+    'westerns' : 'western'
 }
 
 LIST = [genre for genre in MAPPING.keys()]
