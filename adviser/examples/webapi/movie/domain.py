@@ -107,7 +107,6 @@ class MovieDomain(LookupDomain):
         else:
             person = None
 
-        #TODO: make use of all genres that are passed, not just one
         genres = list(constraints['genres'].keys()) if 'genres' in constraints else None
         genre_ids = [genre2id[genre] for genre in genres] if genres else None
         years = list(constraints['release_year'].keys()) if 'release_year' in constraints else None

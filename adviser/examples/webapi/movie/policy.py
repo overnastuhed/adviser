@@ -131,7 +131,7 @@ class MoviePolicy(Service):
         else:
             slot = self._get_open_slot(beliefstate)
             if slot:
-                return SystemResponses.ask_user_to_inform_about_a_slot(slot) #TODO: this could have a better message. Right now, user is asking about a slot value and the system just responds "What actors are you interested in?" It could also explain why it needs more info
+                return SystemResponses.ask_user_to_inform_about_a_slot(slot)
             else: # Too many results, no open slot to ask user about, so ask user to pick one of the found movies
                 return SystemResponses.ask_user_to_pick_from_too_many_results(results, result_count)
 
