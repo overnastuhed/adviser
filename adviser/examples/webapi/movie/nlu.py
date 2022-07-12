@@ -69,7 +69,7 @@ MOVIE_RELEASE_DATE_RANGE_REGEXES = [
     re.compile(r"\b(?:between|from|starting) " + YEAR_REGEX_1 + r"(?: to | ?- ?| and )" + YEAR_REGEX_1)
 ]
 
-MOVIE_CAST_REQUEST_REGEX = [re.compile(r'\b(what is the cast of the movie)\b')] #TODO: improve this regex.
+MOVIE_CAST_REQUEST_REGEX = [re.compile(r'\b((?:(?:what|which) (?:is the cast of|actors are (?:starring )?in)|who (is (?:starring |taking part |playing )?in|are the (?:actors|cast) (?:in|of))) the movie|whom? does the movie star)\b')] #TODO: improve this regex.
 
 MOVIE_RATING_REQUEST_REGEX = [re.compile(r'\b(rating|score|is it (?:a )?(?:good|bad|ok)|how (?:good|bad|ok) is it)\b')]
 
