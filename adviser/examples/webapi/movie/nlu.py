@@ -150,8 +150,11 @@ class MovieNLU(Service):
             matches = re.finditer(regex, user_utterance)
             actor_index = 0
             for match in matches:
-                user_acts.append(UserAct(user_utterance, UserActionType.Inform, 'cast', actors[actor_index]))
-                actor_index += 1
+                try:
+                    user_acts.append(UserAct(user_utterance, UserActionType.Inform, 'cast', actors[actor_index]))
+                    actor_index += 1
+                except:
+                    break
 
         for regex in MOVIE_CAST_REQUEST_REGEX:
             match = regex.search(user_utterance)
